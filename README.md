@@ -2,4 +2,6 @@ Programming exercise for the course MIA Lab at the University of Bern (Prof. Phl
 
 Age determination based on handplate X-Ray pictures.
 
+Additional Sources: http://miac.unibas.ch/MIALab/
+
 Authors: Jonas Walti, Frank Preiswerk, Adrian Schneider
