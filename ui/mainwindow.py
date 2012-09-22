@@ -12,9 +12,11 @@ from qimage2ndarray import *
 
 import gdcm
 import dicom
+import age_determination 
 
 import numpy as np
 import scipy as sp
+import Image
 
 from Ui_mainwindow import Ui_MainWindow
 
@@ -26,6 +28,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     """
     Class documentation goes here.
     """
+    mOrignialXRayImage = Image.new("L", (50, 30)) # dummy image
+    
     def __init__(self, parent = None):
         """
         Constructor
@@ -40,20 +44,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         fileName = QFileDialog.getOpenFileName(self, "Open X-ray File", "","DICOM Files (*.dcm)")
         (reader, img) = dicom.open_image(str(fileName))
-        scene = QGraphicsScene()
-        qimg = gray2qimage(img, normalize=True) # Convert image to a QImage and normalise it
-        scene.addPixmap(QPixmap.fromImage(qimg))
-        self.xrayView.setScene(scene);
+        self.mOrignialXRayImage = img
+        
+        self.display_image( self.mOrignialXRayImage )
         
     
     @pyqtSignature("")
     def on_dectectJointsButton_released(self):
-        """
-        Slot documentation goes here.
-        """
-        
-        # TODO: not implemented yet
-        raise NotImplementedError
+        boneBinaryImage = age_determination.extract_Bones( self.mOrignialXRayImage )
+        self.display_image( boneBinaryImage )
     
     @pyqtSignature("")
     def on_rateJointsButton_released(self):
@@ -62,3 +61,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         # TODO: not implemented yet
         raise NotImplementedError
+    
+    
+    
+    def display_image(self, pilImage ):
+        scene = QGraphicsScene()
+        qimg = gray2qimage(pilImage, normalize=True) # Convert image to a QImage and normalise it
+        scene.addPixmap(QPixmap.fromImage(qimg))
+        self.xrayView.setScene(scene);
