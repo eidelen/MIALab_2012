@@ -72,7 +72,7 @@ def open_image(path, verbose=True):
             image = Image.open(path)
             # Instead of converting it directly via <np.array(img)>, we do it
             # the hard way, which seems to be more reliable
-            data = np.asarray(list(image.getdata()))
+            data = np.asarray(list(image.getdata()), np.int32 )
             # Reshape the data
             if data.ndim != 1:
                 raise RuntimeError("Multi-channel images not supported.")
