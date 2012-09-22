@@ -20,6 +20,7 @@ import gdcm
 import numpy as np
 import os
 import string
+import Image  # The Python image library
 
 
 def open_image(path, verbose=True):
@@ -28,7 +29,11 @@ def open_image(path, verbose=True):
     
     Return a tuple (ireader, data) where <ireader> represents a
     <gdcm.ImageReader> reference to the image as returned by the GDCM library,
-    and <data> holds the actual image data in a Numpy array.
+    and <data> holds the actual image data in a Numpy array. However, if (for
+    whatever reason), GDCM fails to load the image, we give it a second chance
+    and try to let the Python Imaging Library (PIL) handle the image. In this
+    case, if successful, the <ireader> will be the object returned by PIL's
+    <Image.open(path)>, while <data> will remain a Numpy array.
     
     Note that the image data as a <gdcm.Image> instance can be obtained from
     the <ireader> via <ireader.GetImage()>. However, the image instance is
@@ -42,22 +47,46 @@ def open_image(path, verbose=True):
     reader.SetFileName(path)
     # Try to actually read it
     read_success = reader.Read()
-    if not read_success:
-        raise IOError("Error opening dicom-file.")
-    image = reader.GetImage()
-    # Convert to Numpy array
-    try:
-        data = __to_array(image)
-    except ValueError:
-        # Re-raise as IOError with complete traceback
-        import sys
-        (value, traceback) = sys.exc_info()[1:]
-        raise (IOError, value, traceback)
-    if verbose:
-        print "Image loaded:", path
-        print "Meta data:"
-        print image
-    return (reader, data)
+    if read_success:
+        # Convert to Numpy array
+        image = reader.GetImage()
+        try:
+            data = __to_array(image)
+        except ValueError:
+            # Re-raise as IOError with complete traceback
+            import sys
+            (value, traceback) = sys.exc_info()[1:]
+            raise (IOError, value, traceback)
+        if verbose:
+            print "Image loaded via GDCM:", path
+            print "Meta data:"
+            print image
+        return (reader, data)
+    else:
+        # GDCM failed, try to load it with PIL
+        if verbose:
+            print "GDCM failed to load the image, so let PIL have a try."
+        
+        try:
+            # TODO: Handle multi-channel images
+            image = Image.open(path)
+            # Instead of converting it directly via <np.array(img)>, we do it
+            # the hard way, which seems to be more reliable
+            data = np.asarray(list(image.getdata()))
+            # Reshape the data
+            if data.ndim != 1:
+                raise RuntimeError("Multi-channel images not supported.")
+            else:
+                data = data.reshape(tuple(image.size[::-1]))
+            if verbose:
+                print "Image loaded via PIL:", path
+            return (image, data)
+            
+        except Exception, ex:
+            raise IOError("Error opening dicom file: %r" % ex)
+    
+    # Both PIL and GDCM failed (we should never get here, actually)
+    raise IOError("Error opening dicom-file.")
 
 
 def open_stack(path, prefix="", postfix=""):

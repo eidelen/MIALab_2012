@@ -15,8 +15,6 @@ import dicom
 
 import numpy as np
 import scipy as sp
-import matplotlib as mp
-import matplotlib.pylab
 
 from Ui_mainwindow import Ui_MainWindow
 
@@ -42,9 +40,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         fileName = QFileDialog.getOpenFileName(self, "Open X-ray File", "","DICOM Files (*.dcm)")
         (reader, img) = dicom.open_image(str(fileName))
-        mp.pyplot.imshow(img)
         scene = QGraphicsScene()
-        qimg = gray2qimage(img) # Convert image to a QImage and normalise it
+        qimg = gray2qimage(img, normalize=True) # Convert image to a QImage and normalise it
         scene.addPixmap(QPixmap.fromImage(qimg))
         self.xrayView.setScene(scene);
         
