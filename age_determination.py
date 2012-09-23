@@ -1,3 +1,6 @@
+# MIA Lab - F.Preiswerk, J.Walti, A.Schneider
+
+
 import Image  
 import matplotlib.pyplot as plt  
 import matplotlib.patches as mpatches
@@ -66,14 +69,12 @@ def get_XRay_BG_Threshold( pilImage ):
     val1 = bins[idx0]
     val2 = bins[idx1]
 
-    # set threshold closer to lower peak
-    threshVal = (2*val1 + val2) / 3.0
+    # set threshold between bg peak and next one
+    threshVal = (val1 + val2) / 2.0
     
     #plt.plot(grayhist)
     #plt.show()
     
-    
-    #retImage = where(pilImage > threshVal, 1, 0)
 
     return threshVal
     
