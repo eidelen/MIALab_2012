@@ -12,7 +12,8 @@ from qimage2ndarray import *
 
 import gdcm
 import dicom
-import age_determination 
+#import age_determination 
+from AgeDetermination import AgeDetermination
 
 import numpy as np
 import scipy as sp
@@ -51,7 +52,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     
     @pyqtSignature("")
     def on_dectectJointsButton_released(self):
-        boneBinaryImage = age_determination.extract_Bones( self.mOrignialXRayImage )
+        #boneBinaryImage = age_determination.extract_Bones( self.mOrignialXRayImage )
+        aClass = AgeDetermination()
+        boneBinaryImage = aClass.extract_Bones( self.mOrignialXRayImage )
         self.display_image( boneBinaryImage )
     
     @pyqtSignature("")
