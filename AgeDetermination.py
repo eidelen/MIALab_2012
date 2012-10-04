@@ -20,6 +20,31 @@ from skimage.measure import regionprops
 
 
 class AgeDetermination:
+    
+    def detect_joints_of_interest(self, pilImage ):
+        
+        handmask = self.get_hand_mask(pilImage)
+        
+        self.get_fingers_of_interest(handmask)
+        
+        return handmask
+        
+        
+        
+    def get_hand_mask(self, pilImage):
+        # Adi
+        
+        thresh = self.get_XRay_BG_Threshold( pilImage )
+        treshMask = pilImage > thresh
+        
+        return treshMask
+        
+        
+    def get_fingers_of_interest(self, handmaskImage ):
+        # Wale
+        return 0
+    
+    
 
     def extract_Bones(self, pilImage ):
 
@@ -49,26 +74,27 @@ class AgeDetermination:
         plt.title('tresh - canny sigma 3', fontsize=20)
         plt.show()
 
-	# work on subsampled image to reduce complexity and improve skeletonization result
-	#pilImage_small = pilImage.resize(50)
-	pilImage_small = imresize(pilImage, .5 )
-	smooth = gaussian_filter(pilImage_small, 5)
-	thresh = self.get_XRay_BG_Threshold( smooth )
-	binaryMask = smooth
-	binaryMask[binaryMask<thresh]=0
-	binaryMask[binaryMask>=thresh]=1
-	plt.imshow(binaryMask)
-	plt.title('Binary mask from smoothed image')
-	plt.show()
+        # work on subsampled image to reduce complexity and improve skeletonization result
+	   #pilImage_small = pilImage.resize(50)
+        pilImage_small = imresize(pilImage, .5 )
+        
+        smooth = gaussian_filter(pilImage_small, 5)
+        thresh = self.get_XRay_BG_Threshold( smooth )
+        binaryMask = smooth
+        binaryMask[binaryMask<thresh]=0
+        binaryMask[binaryMask>=thresh]=1
+        plt.imshow(binaryMask)
+        plt.title('Binary mask from smoothed image')
+        plt.show()
         skel = skeletonize(binaryMask)
         plt.imshow(skel)
         plt.title('Skeletonized image')
         plt.show()
-	overlay = pilImage_small
-	overlay[skel==1]=1
-	plt.imshow(overlay)
-	plt.title('Original image with skeleton overlaid')
-	plt.show()
+    	overlay = pilImage_small
+    	overlay[skel==1]=1
+    	plt.imshow(overlay)
+    	plt.title('Original image with skeleton overlaid')
+    	plt.show()
 
         return pilImage
     
@@ -102,10 +128,11 @@ class AgeDetermination:
     
         return threshVal
 
-    def __init__(self):
-        
-    	(reader, img) = dicom.open_image('../data/Case1.dcm')	
-	self.extract_Bones(img)
+    #def __init__(self):
+     
+    # Frank specific code :)    
+    #	(reader, img) = dicom.open_image('../data/Case1.dcm')	
+	# self.extract_Bones(img)
 
 	
  

@@ -54,8 +54,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_dectectJointsButton_released(self):
         #boneBinaryImage = age_determination.extract_Bones( self.mOrignialXRayImage )
         aClass = AgeDetermination()
-        boneBinaryImage = aClass.extract_Bones( self.mOrignialXRayImage )
-        self.display_image( boneBinaryImage )
+        joint_marked_image = aClass.detect_joints_of_interest( self.mOrignialXRayImage )
+        self.display_image( joint_marked_image )
     
     @pyqtSignature("")
     def on_rateJointsButton_released(self):
