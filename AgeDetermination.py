@@ -7,7 +7,7 @@ import peakdet
 import numpy as np
 from scipy.misc import imresize
 from scipy.ndimage.filters import gaussian_filter
-
+from scipy.ndimage.measurements import *
 import dicom
 
 from skimage import measure
@@ -17,6 +17,8 @@ from skimage.filter import *
 #from skimage.segmentation import find
 from skimage.morphology import label, closing, square, skeletonize
 from skimage.measure import regionprops
+from cProfile import label
+from scipy.ndimage.measurements import label
 
 
 class AgeDetermination:
@@ -36,6 +38,21 @@ class AgeDetermination:
         
         thresh = self.get_XRay_BG_Threshold( pilImage )
         treshMask = pilImage > thresh
+        
+        labeled, nr_objects = label( treshMask )
+        print "Number of objects found is %d " % nr_objects
+        
+        label_sizes = sum(treshMask, labeled, range(nr_objects + 1))
+        
+        print label_sizes
+        idx_of_biggest_label = np.argmax(label_sizes)
+        print "biggest label is %d " % idx_of_biggest_label
+        print "size of %d " % label_sizes[idx_of_biggest_label]
+        
+        treshMask = labeled == idx_of_biggest_label
+        
+        plt.imshow( treshMask )
+        plt.show()
         
         return treshMask
         
