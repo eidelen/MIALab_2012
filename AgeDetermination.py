@@ -2,6 +2,7 @@
 import Image
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+
 import peakdet
 
 import numpy as np
@@ -15,7 +16,7 @@ from skimage import filter
 from skimage import data
 from skimage.filter import *
 #from skimage.segmentation import find
-from skimage.morphology import label, closing, square, skeletonize
+from skimage.morphology import label, closing, square, skeletonize, medial_axis
 from skimage.measure import regionprops
 from cProfile import label
 from scipy.ndimage.measurements import label
@@ -59,6 +60,23 @@ class AgeDetermination:
         
     def get_fingers_of_interest(self, handmaskImage ):
         # Wale
+        handmaskImage = median_filter(handmaskImage, radius=6, mask=None, percent=50)
+        
+        plt.imshow(handmaskImage)
+        
+        # Compute the medial axis (skeleton) and the distance transform
+        skel, distance = medial_axis(handmaskImage, return_distance=True)
+        
+        # Distance to the background for pixels of the skeleton
+        dist_on_skel = distance * skel
+        
+        plt.figure(figsize=(8, 4))
+        plt.subplot(121) 
+        plt.imshow(dist_on_skel, cmap=plt.cm.spectral, interpolation='nearest')
+        plt.contour(handmaskImage, [0.5], colors='w')
+        
+        plt.show()
+        
         return 0
     
     
