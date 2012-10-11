@@ -1,0 +1,9 @@
+> ipython --pylab
+
+In [1]: import dicom
+
+In [3]: (reader, img) = dicom.open_image("../training/Case1.dcm")
+
+In [5]: aClass = AgeDetermination()
+
+In [6]: aClass.detect_joints_of_interest(img)
