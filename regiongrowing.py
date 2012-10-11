@@ -19,9 +19,12 @@ class Queue:
         
 
 import Image,os
+import numpy as np
 
 def regiongrow(image,epsilon,start_point):
-
+    
+    newimage = np.copy(image)
+    
     Q = Queue()
     s = []
     
@@ -37,29 +40,30 @@ def regiongrow(image,epsilon,start_point):
         x = t[0]
         y = t[1]
         
-        if x < image.size[0]-1 and \
-           abs(  image.getpixel( (x + 1 , y) ) - image.getpixel( (x , y) )  ) <= epsilon :
+        height, width = image.shape
+        if x < width-1 and \
+           abs(  image[x + 1 , y] - image[x , y]  ) <= epsilon :
 
             if not Q.isInside( (x + 1 , y) ) and not (x + 1 , y) in s:
                 Q.enque( (x + 1 , y) )
 
                 
         if x > 0 and \
-           abs(  image.getpixel( (x - 1 , y) ) - image.getpixel( (x , y) )  ) <= epsilon:
+           abs(  image[x - 1 , y] - image[x , y]  ) <= epsilon:
 
             if not Q.isInside( (x - 1 , y) ) and not (x - 1 , y) in s:
                 Q.enque( (x - 1 , y) )
 
                      
-        if y < (image.size[1] - 1) and \
-           abs(  image.getpixel( (x , y + 1) ) - image.getpixel( (x , y) )  ) <= epsilon:
+        if y < (height - 1) and \
+           abs(  image[x , y + 1]- image[x , y]  ) <= epsilon:
 
             if not Q.isInside( (x, y + 1) ) and not (x , y + 1) in s:
                 Q.enque( (x , y + 1) )
 
                     
         if y > 0 and \
-           abs(  image.getpixel( (x , y - 1) ) - image.getpixel( (x , y) )  ) <= epsilon:
+           abs(  image[x , y - 1] - image[x , y]  ) <= epsilon:
 
             if not Q.isInside( (x , y - 1) ) and not (x , y - 1) in s:
                 Q.enque( (x , y - 1) )
@@ -69,16 +73,18 @@ def regiongrow(image,epsilon,start_point):
             s.append( t )
 
             
-    image.load()
-    putpixel = image.im.putpixel
+    #image.load()
+    #putpixel = image.im.putpixel
     
-    for i in range ( image.size[0] ):
-        for j in range ( image.size[1] ):
-            putpixel( (i , j) , 0 )
+    for i in range ( width ):
+        for j in range ( height ):
+            newimage[j , i] = 0 
 
     for i in s:
-        putpixel(i , 150)
+        newimage[i[1], i[0]] = 150
         
-    output=raw_input("enter save fle name : ")
-    image.thumbnail( (image.size[0] , image.size[1]) , Image.ANTIALIAS )
-    image.save(output + ".JPEG" , "JPEG")
+    return newimage
+
+    #output=raw_input("enter save fle name : ")
+    #image.thumbnail( (image.size[0] , image.size[1]) , Image.ANTIALIAS )
+    #image.save(output + ".JPEG" , "JPEG")
