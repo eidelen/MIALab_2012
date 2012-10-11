@@ -31,8 +31,7 @@ class AgeDetermination:
         self.get_fingers_of_interest(handmask)
         
         return handmask
-        
-        
+         
         
     def get_hand_mask(self, pilImage):
         # Adi
@@ -59,16 +58,37 @@ class AgeDetermination:
         
         
     def get_fingers_of_interest(self, handmaskImage ):
-        # Wale
-        handmaskImage = median_filter(handmaskImage, radius=6, mask=None, percent=50)
         
-        plt.imshow(handmaskImage)
+        # Wale
+        
+        handmaskImage = median_filter(handmaskImage, radius=20, mask=None, percent=70)
+        
+#        plt.imshow(handmaskImage)
         
         # Compute the medial axis (skeleton) and the distance transform
         skel, distance = medial_axis(handmaskImage, return_distance=True)
         
-        # Distance to the background for pixels of the skeleton
-        dist_on_skel = distance * skel
+        # Detect only finger - skeleton
+        new_distance = distance <  100
+        distance = distance * new_distance
+        new_distance = distance > 50 
+        
+        ## Distance to the background for pixels of the skeleton
+        new_distance =  skel * new_distance
+        
+        # Scans finger I
+        
+        startX = 170
+        startY = 350
+        endX = 330
+        endY = 800
+        
+                
+        #select the indices for the line on the finger-skeleton (value >0)   
+        #  for x in range(startX,endX):
+        #    for y in range(startY,endY):
+
+        dist_on_skel = new_distance * distance
         
         plt.figure(figsize=(8, 4))
         plt.subplot(121) 
