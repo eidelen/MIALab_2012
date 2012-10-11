@@ -1,8 +1,10 @@
-> ipython --pylab
+> ipython --pylab --deep-reload
 
 In [1]: import dicom
 
 In [3]: (reader, img) = dicom.open_image("../training/Case1.dcm")
+
+from AgeDetermination import AgeDetermination
 
 In [5]: aClass = AgeDetermination()
 

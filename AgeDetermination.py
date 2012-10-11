@@ -1,6 +1,7 @@
 # MIA Lab - F.Preiswerk, J.Walti, A.Schneider
 import Image
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import matplotlib.patches as mpatches
 
 import peakdet
@@ -27,6 +28,11 @@ class AgeDetermination:
     def detect_joints_of_interest(self, pilImage ):
         
         handmask = self.get_hand_mask(pilImage)
+        xRay_without_background = self.remove_background(pilImage, handmask)
+        self.remove_skin(xRay_without_background, handmask)
+        #plt.imshow(xRay_without_background, cmap=cm.Greys_r)
+        #plt.show()
+        
         
         self.get_fingers_of_interest(handmask)
         
@@ -44,17 +50,31 @@ class AgeDetermination:
         
         label_sizes = sum(treshMask, labeled, range(nr_objects + 1))
         
-        print label_sizes
         idx_of_biggest_label = np.argmax(label_sizes)
         print "biggest label is %d " % idx_of_biggest_label
         print "size of %d " % label_sizes[idx_of_biggest_label]
         
         treshMask = labeled == idx_of_biggest_label
         
-        plt.imshow( treshMask )
-        plt.show()
-        
         return treshMask
+    
+    
+    def remove_background(self, xRay, maskedBG ):
+        return xRay * maskedBG;
+    
+    def remove_skin(self, imgNoBG, bgMask ):
+        # kind of growing region :) , which is started only
+        # at borders from background to object... what is 
+        # actually supposed to skin.
+        
+        
+        widht, height = imgNoBG.shape
+        
+        #for x in range(0, widht):
+        #    for y in range( 0, height ):
+                
+                 
+        
         
         
     def get_fingers_of_interest(self, handmaskImage ):
