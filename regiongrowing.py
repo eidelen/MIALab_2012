@@ -23,7 +23,6 @@ class Queue:
         return (item in self.items)
         
 
-import Image,os
 import numpy as np
 
 def regiongrow(image,epsilon,start_point):
@@ -39,6 +38,10 @@ def regiongrow(image,epsilon,start_point):
     
     Q.enque((y,x))
 
+    # TODO: Change from uint to int!!!!!!!!!
+    # TODO: Change from uint to int!!!!!!!!!
+    # TODO: Change from uint to int!!!!!!!!!
+    # TODO: Change from uint to int!!!!!!!!!
     
     while not Q.isEmpty():
 
@@ -47,18 +50,20 @@ def regiongrow(image,epsilon,start_point):
         x = t[1]
 
         height, width = image.shape
-        if x < width-1 and \
-           abs(  image[y , x + 1] - image[y , x]  ) <= epsilon :
+        valCur = image[y , x]
+        
+        if x < (width-1) and abs(  image[y , x + 1] - image[y , x]  ) <= epsilon :
 
             if not Q.isInside( (y , x + 1) ) and not (y , x + 1) in s:
                 Q.enque( (y , x + 1) )
 
                 
-        if x > 0 and \
-           abs(  image[y , x - 1] - image[y , x]  ) <= epsilon:
+        if x > 0 :
+           valNext =  image[y , x - 1]
+           if abs(  valNext - valCur  ) <= epsilon:
 
-            if not Q.isInside( (y , x - 1) ) and not (y , x - 1) in s:
-                Q.enque( (y , x - 1) )
+                if not Q.isInside( (y , x - 1) ) and not (y , x - 1) in s:
+                    Q.enque( (y , x - 1) )
 
                      
         if y < (height - 1) and \
@@ -85,10 +90,7 @@ def regiongrow(image,epsilon,start_point):
             newimage[j , i] = 0 
 
     for i in s:
-        newimage[i[0], i[1]] = 150
+        newimage[i[0], i[1]] = 1
         
     return newimage
 
-    #output=raw_input("enter save fle name : ")
-    #image.thumbnail( (image.size[0] , image.size[1]) , Image.ANTIALIAS )
-    #image.save(output + ".JPEG" , "JPEG")

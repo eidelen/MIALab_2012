@@ -21,16 +21,25 @@ from skimage.morphology import label, closing, square, skeletonize, medial_axis
 from skimage.measure import regionprops
 from cProfile import label
 from scipy.ndimage.measurements import label
+import regiongrowing
+
+from regiongrowing import *
+
 
 
 class AgeDetermination:
     
     def detect_joints_of_interest(self, pilImage ):
         
+        # test
+        #A = np.array([[156, 163, 144, 145, 140],[152, 155, 145, 148, 152],[150, 155, 154, 152, 155],[159, 163, 160, 149, 142]])
+        #return regiongrow(A, 10, [1,0])
+
+        
         handmask = self.get_hand_mask(pilImage)
         xRay_without_background = self.remove_background(pilImage, handmask)
-        self.remove_skin(xRay_without_background, handmask)
-        #plt.imshow(xRay_without_background, cmap=cm.Greys_r)
+        #skinMask = self.remove_skin(xRay_without_background, handmask)
+        #plt.imshow(skinMask, cmap=cm.Greys_r)
         #plt.show()
         
         
@@ -67,16 +76,37 @@ class AgeDetermination:
         # at borders from background to object... what is 
         # actually supposed to skin.
         
+        # well -> for tables the height (y or m) is the first value
+        imgNoBGCpy = np.copy(imgNoBG)
+        height, widht = imgNoBGCpy.shape
         
-        widht, height = imgNoBG.shape
+        skinMask = np.zeros((height,widht))
         
-        #for x in range(0, widht):
-        #    for y in range( 0, height ):
+        counter = 0
+        
+        for n in range(0, widht-1):
+            for m in range( 0, height ):
+                maskVal = bgMask[m,n]
+                nextMaskVal = bgMask[m,n+1]
                 
+                if (maskVal < nextMaskVal) and (counter < 1) :
+                    # we are on a edge from background to skin
+                    if skinMask[m,n+1] == 0 :
+                        # edge pixel not part of previous region grow
+                        return regiongrow(imgNoBGCpy, 30, [m, n+1])
+                        # update values
+                        #skinMask = (skinMask > 0) | (region > 0)
+                        #imgNoBGCpy = imgNoBGCpy * (~skinMask) # remove parts where is skin
+                        
+                        #counter = counter + 1
+                        
+                    
+                    
+        #return skinMask
                  
         
         
-        
+                    
     def get_fingers_of_interest(self, handmaskImage ):
         
         # Wale
