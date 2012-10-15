@@ -25,9 +25,9 @@ class Queue:
 
 import numpy as np
 
-def regiongrow(image,epsilon,start_point):
+def regiongrow(img,epsilon,start_point):
     
-    newimage = np.copy(image)
+    image = img.astype(np.float)     
     
     Q = Queue()
     s = []
@@ -38,10 +38,6 @@ def regiongrow(image,epsilon,start_point):
     
     Q.enque((y,x))
 
-    # TODO: Change from uint to int!!!!!!!!!
-    # TODO: Change from uint to int!!!!!!!!!
-    # TODO: Change from uint to int!!!!!!!!!
-    # TODO: Change from uint to int!!!!!!!!!
     
     while not Q.isEmpty():
 
@@ -50,7 +46,6 @@ def regiongrow(image,epsilon,start_point):
         x = t[1]
 
         height, width = image.shape
-        valCur = image[y , x]
         
         if x < (width-1) and abs(  image[y , x + 1] - image[y , x]  ) <= epsilon :
 
@@ -58,9 +53,7 @@ def regiongrow(image,epsilon,start_point):
                 Q.enque( (y , x + 1) )
 
                 
-        if x > 0 :
-           valNext =  image[y , x - 1]
-           if abs(  valNext - valCur  ) <= epsilon:
+        if x > 0 and abs(  image[y , x - 1] - image[y , x]  ) <= epsilon:
 
                 if not Q.isInside( (y , x - 1) ) and not (y , x - 1) in s:
                     Q.enque( (y , x - 1) )
@@ -84,13 +77,16 @@ def regiongrow(image,epsilon,start_point):
             s.append( t )
 
 
+    region = np.zeros( (height, width) )
     
     for i in range ( width ):
         for j in range ( height ):
-            newimage[j , i] = 0 
+            region[j , i] = 0 
 
+    print np.size(s)
+    
     for i in s:
-        newimage[i[0], i[1]] = 1
+        region[i[0], i[1]] = 150
         
-    return newimage
+    return region
 

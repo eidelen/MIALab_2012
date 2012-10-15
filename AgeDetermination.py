@@ -1,5 +1,5 @@
 # MIA Lab - F.Preiswerk, J.Walti, A.Schneider
-import Image
+import Image 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.patches as mpatches
@@ -24,23 +24,26 @@ from scipy.ndimage.measurements import label
 import regiongrowing
 
 from regiongrowing import *
+from Image import fromarray
 
 
 
 class AgeDetermination:
     
-    def detect_joints_of_interest(self, pilImage ):
+    def detect_joints_of_interest(self, numpyImage ):
         
-        # test
-        #A = np.array([[156, 163, 144, 145, 140],[152, 155, 145, 148, 152],[150, 155, 154, 152, 155],[159, 163, 160, 149, 142]])
-        #return regiongrow(A, 10, [1,0])
-
-        
-        handmask = self.get_hand_mask(pilImage)
-        xRay_without_background = self.remove_background(pilImage, handmask)
+               
+        # downsample input image - ask from simon
+        # h, w = numpyImage.shape
+        # aPILImge = fromarray( numpy.uint32(numpyImage) )
+     
+        handmask = self.get_hand_mask(numpyImage)
+        xRay_without_background = self.remove_background(numpyImage, handmask)
         #skinMask = self.remove_skin(xRay_without_background, handmask)
         #plt.imshow(skinMask, cmap=cm.Greys_r)
-        #plt.show()
+        #plt.show()     
+        
+        
         
         
         self.get_fingers_of_interest(handmask)
@@ -78,6 +81,7 @@ class AgeDetermination:
         
         # well -> for tables the height (y or m) is the first value
         imgNoBGCpy = np.copy(imgNoBG)
+        
         height, widht = imgNoBGCpy.shape
         
         skinMask = np.zeros((height,widht))
@@ -89,20 +93,20 @@ class AgeDetermination:
                 maskVal = bgMask[m,n]
                 nextMaskVal = bgMask[m,n+1]
                 
-                if (maskVal < nextMaskVal) and (counter < 1) :
+                if (maskVal < nextMaskVal) and (counter < 5) :
                     # we are on a edge from background to skin
                     if skinMask[m,n+1] == 0 :
                         # edge pixel not part of previous region grow
-                        return regiongrow(imgNoBGCpy, 30, [m, n+1])
+                        region = regiongrow(imgNoBGCpy, 30, [m, n+1])
                         # update values
-                        #skinMask = (skinMask > 0) | (region > 0)
-                        #imgNoBGCpy = imgNoBGCpy * (~skinMask) # remove parts where is skin
+                        skinMask = (skinMask > 0) | (region > 0)
+                        imgNoBGCpy = imgNoBGCpy * (~skinMask) # remove parts where is skin
                         
-                        #counter = counter + 1
+                        counter = counter + 1
                         
                     
                     
-        #return skinMask
+        return skinMask
                  
         
         
