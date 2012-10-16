@@ -1,10 +1,13 @@
 # MIA Lab - F.Preiswerk, J.Walti, A.Schneider
+
+# TODO: Check what packets are realy used!
+
 import Image 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.patches as mpatches
 
-import peakdet
+
 
 import numpy as np
 from scipy.misc import imresize
@@ -21,54 +24,63 @@ from skimage.morphology import label, closing, square, skeletonize, medial_axis
 from skimage.measure import regionprops
 from cProfile import label
 from scipy.ndimage.measurements import label
-import regiongrowing
 
+import cv2
+import peakdet
 from regiongrowing import *
-from Image import fromarray
+
 
 
 
 class AgeDetermination:
     
     def detect_joints_of_interest(self, numpyImage ):
+    
+        success, handmask = self.get_hand_mask(numpyImage)
+        if not success :
+            print "Background Segmentation failed"
+            return handmask
         
-               
-        # downsample input image - ask from simon
-        # h, w = numpyImage.shape
-        # aPILImge = fromarray( numpy.uint32(numpyImage) )
-     
-        handmask = self.get_hand_mask(numpyImage)
         xRay_without_background = self.remove_background(numpyImage, handmask)
+
         #skinMask = self.remove_skin(xRay_without_background, handmask)
         #plt.imshow(skinMask, cmap=cm.Greys_r)
         #plt.show()     
         
-        
-        
-        
+    
         self.get_fingers_of_interest(handmask)
         
         return handmask
          
         
-    def get_hand_mask(self, pilImage):
+    def get_hand_mask(self, numpyImage):
         # Adi
+        success = False
         
-        thresh = self.get_XRay_BG_Threshold( pilImage )
-        treshMask = pilImage > thresh
+        thresh = self.get_XRay_BG_Threshold( numpyImage )
+        treshMask = numpyImage > thresh
         
         labeled, nr_objects = label( treshMask )
         print "Number of objects found is %d " % nr_objects
         
-        label_sizes = sum(treshMask, labeled, range(nr_objects + 1))
+        label_sizes = sum( treshMask, labeled, range(nr_objects + 1) )
         
         idx_of_biggest_label = np.argmax(label_sizes)
-        print "biggest label is %d " % idx_of_biggest_label
+        
         print "size of %d " % label_sizes[idx_of_biggest_label]
         
-        treshMask = labeled == idx_of_biggest_label
+        # our object should fill at least 20 % of the whole image
+        h, w = treshMask.shape
+        areaRatio = label_sizes[idx_of_biggest_label] / (h*w)
+        if areaRatio > 0.2 :
+            success = True
         
-        return treshMask
+        print "Obj. size %d " % label_sizes[idx_of_biggest_label]
+        print "Obj. size ratio %f " % areaRatio
+                
+        treshMask = (labeled == idx_of_biggest_label)
+        
+        return success, treshMask
     
     
     def remove_background(self, xRay, maskedBG ):
@@ -153,65 +165,6 @@ class AgeDetermination:
         
         return 0
     
-    
-
-    def extract_Bones(self, pilImage ):
-
-        thresh = self.get_XRay_BG_Threshold( pilImage )
-        treshMask = pilImage > thresh
-        plt.imshow( treshMask )
-        plt.title('threshold mask', fontsize=20)
-        plt.show()
-    
-        #get_Fingers(treshMask)
-    
-        maskedImage = pilImage * treshMask
-    
-        adaptiveMask = threshold_adaptive(maskedImage, 15, 'mean')
-    
-        plt.imshow( adaptiveMask )
-        plt.title('adaptive mask', fontsize=20)
-        plt.show()
-    
-        maskedImage = pilImage * adaptiveMask
-        plt.imshow( maskedImage )
-        plt.title('adaptive masked image', fontsize=20)
-        plt.show()
-    
-        cannyS5 = filter.canny(maskedImage, 3)
-        plt.imshow( cannyS5, cmap=plt.cm.gray)
-        plt.title('tresh - canny sigma 3', fontsize=20)
-        plt.show()
-
-        # work on subsampled image to reduce complexity and improve skeletonization result
-	   #pilImage_small = pilImage.resize(50)
-        pilImage_small = imresize(pilImage, .5 )
-        
-        smooth = gaussian_filter(pilImage_small, 5)
-        thresh = self.get_XRay_BG_Threshold( smooth )
-        binaryMask = smooth
-        binaryMask[binaryMask<thresh]=0
-        binaryMask[binaryMask>=thresh]=1
-        plt.imshow(binaryMask)
-        plt.title('Binary mask from smoothed image')
-        plt.show()
-        skel = skeletonize(binaryMask)
-        plt.imshow(skel)
-        plt.title('Skeletonized image')
-        plt.show()
-    	overlay = pilImage_small
-    	overlay[skel==1]=1
-    	plt.imshow(overlay)
-    	plt.title('Original image with skeleton overlaid')
-    	plt.show()
-
-        return pilImage
-    
-    
-    #def get_Fingers( binaryImage ):
-   
-    #def remove_first_uniform_layer( mask, grayImage ):
-    	# region growing seeded at the masks boarder
       
     def get_XRay_BG_Threshold(self, pilImage ):
     
