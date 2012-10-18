@@ -36,6 +36,8 @@ class AgeDetermination:
     
     def detect_joints_of_interest(self, numpyImage ):
     
+        imgH, imgW = numpyImage.shape
+        
         success, handmask = self.get_hand_mask(numpyImage)
         if not success :
             print "Background Segmentation failed"
@@ -48,10 +50,26 @@ class AgeDetermination:
         #plt.show()     
         
     
-        success = self.get_fingers_of_interest( handmask )
+        success, littleFingerLine, middleFingerLine = self.get_fingers_of_interest( handmask )
         if not success :
             print "Finger Detection Failed"
             return xRay_without_background
+        
+        
+        plt.imshow(xRay_without_background, cmap=cm.Greys_r)
+        for i in littleFingerLine:
+            plt.plot(i[1], i[0], ".r")
+        for i in middleFingerLine:
+            plt.plot(i[1], i[0], ".r")
+            
+        #plt.ylim([0,imgH])
+        #plt.xlim([0,imgW])
+        plt.show() 
+   
+        
+        
+        
+        
         
         return xRay_without_background
          
@@ -88,47 +106,12 @@ class AgeDetermination:
     
     def remove_background(self, xRay, maskedBG ):
         return xRay * maskedBG;
-    
-    def remove_skin(self, imgNoBG, bgMask ):
-        # kind of growing region :) , which is started only
-        # at borders from background to object... what is 
-        # actually supposed to skin.
         
-        # well -> for tables the height (y or m) is the first value
-        imgNoBGCpy = np.copy(imgNoBG)
-        
-        height, widht = imgNoBGCpy.shape
-        
-        skinMask = np.zeros((height,widht))
-        
-        counter = 0
-        
-        for n in range(0, widht-1):
-            for m in range( 0, height ):
-                maskVal = bgMask[m,n]
-                nextMaskVal = bgMask[m,n+1]
-                
-                if (maskVal < nextMaskVal) and (counter < 5) :
-                    # we are on a edge from background to skin
-                    if skinMask[m,n+1] == 0 :
-                        # edge pixel not part of previous region grow
-                        region = regiongrow(imgNoBGCpy, 30, [m, n+1])
-                        # update values
-                        skinMask = (skinMask > 0) | (region > 0)
-                        imgNoBGCpy = imgNoBGCpy * (~skinMask) # remove parts where is skin
-                        
-                        counter = counter + 1
-                        
-                    
-                    
-        return skinMask
-                 
-        
-        
-                    
     def get_fingers_of_interest(self, handmaskImage ):
         
         # identify fingers - adi
+        handmaskImage = median_filter(handmaskImage, radius=20, mask=None, percent=70)
+        
         maskH, maskW = handmaskImage.shape
          
         # identifying the fingers by diff image of the handmask.
@@ -151,6 +134,7 @@ class AgeDetermination:
             if interestingRows[rowIter] :
                 current8OrderCount = current8OrderCount + 1
                 
+                                
                 # extract center of litle and middle finger
                 currentRowPeaks = dRowMaskIsPeak[rowIter,:]
                 currentRowPeaksSize = currentRowPeaks.shape
@@ -177,8 +161,8 @@ class AgeDetermination:
                         cPeakIndex = cPeakIndex + 1
                         
                 
-                curLitleFingerC.append( [ rowIter , endLitleFinger - startLitleFinger] ) 
-                curMiddleFingerC.append( [ rowIter , endMiddleFinger - startMiddleFinger] ) 
+                curLitleFingerC.append( [ rowIter ,  (endLitleFinger  + startLitleFinger )/2 ] ) 
+                curMiddleFingerC.append( [ rowIter , (endMiddleFinger + startMiddleFinger)/2 ] ) 
                 
             else:
                 current8OrderCount = 0
@@ -191,23 +175,30 @@ class AgeDetermination:
                 maxMiddleFingerCenters = curMiddleFingerC
             
                 
-        
-        print maxLittleFingerCenters
-        print maxMiddleFingerCenters
         print "Detected 4 fingers over a distance of %d " % currentMax8OrderCount
         
         detectedFingerRatio = float(currentMax8OrderCount) / float(maskH)
         
         if  detectedFingerRatio < 0.1 :# continous distance needs to be at least 10% of image height
-            return False
+            return False, [], []
         
+        # continous growing
+        maxLittleFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxLittleFingerCenters )
+        maxMiddleFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxMiddleFingerCenters )
+        
+        return True, maxLittleFingerCenters, maxMiddleFingerCenters
+        
+        
+        for i in maxLittleFingerCenters:
+            handmaskImage[i[0], i[1]] = 0
+            
+        for i in maxMiddleFingerCenters:
+            handmaskImage[i[0], i[1]] = 0
+            
          
-                
-                
-
         
-        #plt.imshow(dMask)
-        #plt.show()
+        plt.imshow(handmaskImage)
+        plt.show()
         
         
         #for rowIdx in range(0, h):
@@ -257,6 +248,65 @@ class AgeDetermination:
         
         return True
     
+    def continue_central_line(self, peaks, currentCenters ):
+        thicknessDiffThreshold = 10
+        
+        h, w = peaks.shape
+        
+        # growing downwards
+        lastPoint = currentCenters[-1]
+        lastCenter = lastPoint[1]     
+        for i in range( lastPoint[0] , h) :
+            lowIdx, upIdx = self.get_closest_lower_and_upper_true_idx(peaks[i,:], lastCenter )
+            
+            center = (upIdx + lowIdx)/2   
+            diffCenter = center - lastCenter
+            
+            if np.sqrt(diffCenter*diffCenter) > 5 : # stop the process when thickness difference becomes to big
+                break
+            
+            lastCenter = center
+            currentCenters.append( [i, center] )
+                   
+        # growing upwards
+        firstPoint = currentCenters[0]
+        firstCenter = firstPoint[1]
+        
+        for i in range( firstPoint[0] , 0, -1) :
+            lowIdx, upIdx = self.get_closest_lower_and_upper_true_idx(peaks[i,:], firstCenter )
+            
+            center = (upIdx + lowIdx)/2   
+            diffCenter = center - firstCenter
+            
+            if np.sqrt(diffCenter*diffCenter) > 5 : # stop the process when thickness difference becomes to big
+                break
+            
+            firstCenter = center
+            
+            currentCenters.insert(0, [i,center])
+                     
+        return currentCenters     
+    
+    def get_closest_lower_and_upper_true_idx( self, array1D, targetIdx ):
+        arrSh = array1D.shape
+        lowIdx = 0
+        upIdx = 0
+        minLowDist = 9999999999
+        minUpDist = 9999999999
+        for i in range(0, arrSh[0]) :
+            if array1D[i] :
+                dist = i - targetIdx
+                if dist < 0 : # lower idx
+                    if (dist*dist) < minLowDist :
+                        minLowDist = (dist*dist)
+                        lowIdx = i
+                if dist > 0 : # uper idx
+                    if (dist*dist) < minUpDist :
+                        minUpDist = (dist*dist)
+                        upIdx = i
+        
+        return lowIdx, upIdx
+                    
       
     def get_XRay_BG_Threshold(self, pilImage ):
     
@@ -281,6 +331,39 @@ class AgeDetermination:
         #plt.show()
     
         return threshVal
+    
+    def remove_skin(self, imgNoBG, bgMask ):
+        # kind of growing region :) , which is started only
+        # at borders from background to object... what is 
+        # actually supposed to skin.
+        
+        # well -> for tables the height (y or m) is the first value
+        imgNoBGCpy = np.copy(imgNoBG)
+        
+        height, widht = imgNoBGCpy.shape
+        
+        skinMask = np.zeros((height,widht))
+        
+        counter = 0
+        
+        for n in range(0, widht-1):
+            for m in range( 0, height ):
+                maskVal = bgMask[m,n]
+                nextMaskVal = bgMask[m,n+1]
+                
+                if (maskVal < nextMaskVal) and (counter < 5) :
+                    # we are on a edge from background to skin
+                    if skinMask[m,n+1] == 0 :
+                        # edge pixel not part of previous region grow
+                        region = regiongrow(imgNoBGCpy, 30, [m, n+1])
+                        # update values
+                        skinMask = (skinMask > 0) | (region > 0)
+                        imgNoBGCpy = imgNoBGCpy * (~skinMask) # remove parts where is skin
+                        
+                        counter = counter + 1
+                                          
+                    
+        return skinMask
 
     #def __init__(self):
      
