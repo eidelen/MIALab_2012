@@ -48,9 +48,12 @@ class AgeDetermination:
         #plt.show()     
         
     
-        self.get_fingers_of_interest(handmask)
+        success = self.get_fingers_of_interest( handmask )
+        if not success :
+            print "Finger Detection Failed"
+            return xRay_without_background
         
-        return handmask
+        return xRay_without_background
          
         
     def get_hand_mask(self, numpyImage):
@@ -125,6 +128,95 @@ class AgeDetermination:
                     
     def get_fingers_of_interest(self, handmaskImage ):
         
+        # identify fingers - adi
+        maskH, maskW = handmaskImage.shape
+         
+        # identifying the fingers by diff image of the handmask.
+        # each finger has two peaks. that means there are 8 peaks for the 
+        # higher 4 fingers. the "daumen" has to handeled different.
+        dRowMask = np.diff(handmaskImage,n=1,axis=1)
+        dRowMaskIsPeak = (dRowMask > 0)
+        dRowSum = np.sum(dRowMask,axis=1)
+        interestingRows = (dRowSum == 8)
+        
+        # the "rowSum == 8" should appear one after another. lets count
+        maxLittleFingerCenters = []
+        maxMiddleFingerCenters = []
+        curLitleFingerC = []
+        curMiddleFingerC = []
+        currentMax8OrderCount = 0
+        current8OrderCount = 0
+        itRowSize = interestingRows.shape
+        for rowIter in range(0, itRowSize[0]):
+            if interestingRows[rowIter] :
+                current8OrderCount = current8OrderCount + 1
+                
+                # extract center of litle and middle finger
+                currentRowPeaks = dRowMaskIsPeak[rowIter,:]
+                currentRowPeaksSize = currentRowPeaks.shape
+                cPeakIndex = 0
+                startLitleFinger = 0 
+                endLitleFinger = 0
+                startMiddleFinger = 0
+                endMiddleFinger = 0
+                for cRowPeakIter in range(0, currentRowPeaksSize[0]) :
+                    if currentRowPeaks[cRowPeakIter] :
+                        
+                        if cPeakIndex == 0 :
+                            startLitleFinger = cRowPeakIter
+                        
+                        if cPeakIndex == 1 :
+                            endLitleFinger = cRowPeakIter
+                            
+                        if cPeakIndex == 4 :
+                            startMiddleFinger = cRowPeakIter
+                        
+                        if cPeakIndex == 5 :
+                            endMiddleFinger = cRowPeakIter
+                        
+                        cPeakIndex = cPeakIndex + 1
+                        
+                
+                curLitleFingerC.append( [ rowIter , endLitleFinger - startLitleFinger] ) 
+                curMiddleFingerC.append( [ rowIter , endMiddleFinger - startMiddleFinger] ) 
+                
+            else:
+                current8OrderCount = 0
+                curLitleFingerC = []
+                curMiddleFingerC = []
+                
+            if current8OrderCount > currentMax8OrderCount :
+                currentMax8OrderCount = current8OrderCount
+                maxLittleFingerCenters = curLitleFingerC
+                maxMiddleFingerCenters = curMiddleFingerC
+            
+                
+        
+        print maxLittleFingerCenters
+        print maxMiddleFingerCenters
+        print "Detected 4 fingers over a distance of %d " % currentMax8OrderCount
+        
+        detectedFingerRatio = float(currentMax8OrderCount) / float(maskH)
+        
+        if  detectedFingerRatio < 0.1 :# continous distance needs to be at least 10% of image height
+            return False
+        
+         
+                
+                
+
+        
+        #plt.imshow(dMask)
+        #plt.show()
+        
+        
+        #for rowIdx in range(0, h):
+        #    cRow = handmaskImage[rowIdx,:]
+        #    diff(cRow,n=1,axis=1)
+        
+        
+        
+        
         # Wale
         
         handmaskImage = median_filter(handmaskImage, radius=20, mask=None, percent=70)
@@ -163,7 +255,7 @@ class AgeDetermination:
         
         plt.show()
         
-        return 0
+        return True
     
       
     def get_XRay_BG_Threshold(self, pilImage ):
