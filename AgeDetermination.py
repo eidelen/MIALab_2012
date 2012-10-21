@@ -19,7 +19,6 @@ from skimage import measure
 from skimage import filter
 from skimage import data
 from skimage.filter import *
-#from skimage.segmentation import find
 from skimage.morphology import label, closing, square, skeletonize, medial_axis
 from skimage.measure import regionprops
 from cProfile import label
@@ -50,18 +49,22 @@ class AgeDetermination:
         #plt.show()     
         
     
-        success, littleFingerLine, middleFingerLine = self.get_fingers_of_interest( handmask )
+        success, littleFingerLine, ringFingerLine, middleFingerLine, pointingFingerLine = self.get_fingers_of_interest( handmask )
         if not success :
             print "Finger Detection Failed"
-            return xRay_without_background
+            return handmask
         
         
         plt.imshow(xRay_without_background, cmap=cm.Greys_r)
         for i in littleFingerLine:
             plt.plot(i[1], i[0], ".r")
+        for i in ringFingerLine:
+            plt.plot(i[1], i[0], ".r")
         for i in middleFingerLine:
             plt.plot(i[1], i[0], ".r")
-            
+        for i in pointingFingerLine:
+            plt.plot(i[1], i[0], ".r")
+                        
         #plt.ylim([0,imgH])
         #plt.xlim([0,imgW])
         plt.show() 
@@ -116,7 +119,8 @@ class AgeDetermination:
          
         # identifying the fingers by diff image of the handmask.
         # each finger has two peaks. that means there are 8 peaks for the 
-        # higher 4 fingers. the "daumen" has to handeled different.
+        # higher 4 fingers. The 'Daumen' is detected downwards, right 
+        # of the pointing finger.
         dRowMask = np.diff(handmaskImage,n=1,axis=1)
         dRowMaskIsPeak = (dRowMask > 0)
         dRowSum = np.sum(dRowMask,axis=1)
@@ -124,9 +128,13 @@ class AgeDetermination:
         
         # the "rowSum == 8" should appear one after another. lets count
         maxLittleFingerCenters = []
+        maxRingFingerCenters = []
         maxMiddleFingerCenters = []
+        maxPointFingerCenters = []
         curLitleFingerC = []
+        curRingFingerC = []
         curMiddleFingerC = []
+        curPointFingerC = []
         currentMax8OrderCount = 0
         current8OrderCount = 0
         itRowSize = interestingRows.shape
@@ -141,8 +149,12 @@ class AgeDetermination:
                 cPeakIndex = 0
                 startLitleFinger = 0 
                 endLitleFinger = 0
+                startRingFinger = 0 
+                endRingFinger = 0
                 startMiddleFinger = 0
                 endMiddleFinger = 0
+                startPointFinger = 0
+                endPointFinger = 0
                 for cRowPeakIter in range(0, currentRowPeaksSize[0]) :
                     if currentRowPeaks[cRowPeakIter] :
                         
@@ -152,27 +164,46 @@ class AgeDetermination:
                         if cPeakIndex == 1 :
                             endLitleFinger = cRowPeakIter
                             
+                        if cPeakIndex == 2 :
+                            startRingFinger = cRowPeakIter
+                        
+                        if cPeakIndex == 3 :
+                            endRingFinger = cRowPeakIter
+                            
                         if cPeakIndex == 4 :
                             startMiddleFinger = cRowPeakIter
                         
                         if cPeakIndex == 5 :
                             endMiddleFinger = cRowPeakIter
+                            
+                        if cPeakIndex == 6 :
+                            startPointFinger = cRowPeakIter
+                        
+                        if cPeakIndex == 7 :
+                            endPointFinger = cRowPeakIter
                         
                         cPeakIndex = cPeakIndex + 1
                         
                 
-                curLitleFingerC.append( [ rowIter ,  (endLitleFinger  + startLitleFinger )/2 ] ) 
+                curLitleFingerC.append( [ rowIter ,  (endLitleFinger  + startLitleFinger )/2 ] )
+                curRingFingerC.append( [ rowIter ,  (endRingFinger  + startRingFinger )/2 ] )  
                 curMiddleFingerC.append( [ rowIter , (endMiddleFinger + startMiddleFinger)/2 ] ) 
+                curPointFingerC.append( [ rowIter , (endPointFinger + startPointFinger)/2 ] )
                 
             else:
                 current8OrderCount = 0
                 curLitleFingerC = []
+                curRingFingerC= []
                 curMiddleFingerC = []
+                curPointFingerC = []
                 
             if current8OrderCount > currentMax8OrderCount :
                 currentMax8OrderCount = current8OrderCount
                 maxLittleFingerCenters = curLitleFingerC
+                maxRingFingerCenters = curRingFingerC
                 maxMiddleFingerCenters = curMiddleFingerC
+                maxPointFingerCenters = curPointFingerC
+                
             
                 
         print "Detected 4 fingers over a distance of %d " % currentMax8OrderCount
@@ -180,13 +211,15 @@ class AgeDetermination:
         detectedFingerRatio = float(currentMax8OrderCount) / float(maskH)
         
         if  detectedFingerRatio < 0.1 :# continous distance needs to be at least 10% of image height
-            return False, [], []
+            return False, [], [], [], []
         
         # continous growing
         maxLittleFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxLittleFingerCenters )
+        maxRingFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxRingFingerCenters )
         maxMiddleFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxMiddleFingerCenters )
+        maxPointFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxPointFingerCenters )
         
-        return True, maxLittleFingerCenters, maxMiddleFingerCenters
+        return True, maxLittleFingerCenters, maxRingFingerCenters, maxMiddleFingerCenters, maxPointFingerCenters
         
         
         for i in maxLittleFingerCenters:
