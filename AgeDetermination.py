@@ -34,8 +34,14 @@ from regiongrowing import *
 class AgeDetermination:
     
     def detect_joints_of_interest(self, numpyImage ):
-    
+        
+        # cut lower part of the image 
         imgH, imgW = numpyImage.shape
+        numpyImage = numpyImage[0:(imgH-100),:]
+        imgH, imgW = numpyImage.shape
+        
+        #numpyImage = median_filter(numpyImage, radius=2, mask=None, percent=50)
+        
         
         success, handmask = self.get_hand_mask(numpyImage)
         if not success :
@@ -210,7 +216,7 @@ class AgeDetermination:
         
         detectedFingerRatio = float(currentMax8OrderCount) / float(maskH)
         
-        if  detectedFingerRatio < 0.1 :# continous distance needs to be at least 10% of image height
+        if  detectedFingerRatio < 0.05 :# continous distance needs to be at least 10% of image height
             return False, [], [], [], []
         
         # continous growing
@@ -358,7 +364,7 @@ class AgeDetermination:
         val2 = bins[idx1]
 
         # set threshold between bg peak and next one
-        threshVal = (val1 + val2) / 2.0
+        threshVal = (val2 - val1) * 0.5  + val1
     
         #plt.plot(grayhist)
         #plt.show()
