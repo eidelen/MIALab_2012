@@ -55,7 +55,7 @@ class AgeDetermination:
         #plt.show()     
         
     
-        success, littleFingerLine, ringFingerLine, middleFingerLine, pointingFingerLine = self.get_fingers_of_interest( handmask )
+        success, littleFingerLine, ringFingerLine, middleFingerLine, pointingFingerLine, daumenFingerLine = self.get_fingers_of_interest( handmask )
         if not success :
             print "Finger Detection Failed"
             return handmask
@@ -69,6 +69,8 @@ class AgeDetermination:
         for i in middleFingerLine:
             plt.plot(i[1], i[0], ".r")
         for i in pointingFingerLine:
+            plt.plot(i[1], i[0], ".r")
+        for i in daumenFingerLine:
             plt.plot(i[1], i[0], ".r")
                         
         #plt.ylim([0,imgH])
@@ -143,6 +145,8 @@ class AgeDetermination:
         curPointFingerC = []
         currentMax8OrderCount = 0
         current8OrderCount = 0
+        maxPointingFingerWidht = 0
+        curPointingFingerWidht = 0
         itRowSize = interestingRows.shape
         for rowIter in range(0, itRowSize[0]):
             if interestingRows[rowIter] :
@@ -195,6 +199,7 @@ class AgeDetermination:
                 curRingFingerC.append( [ rowIter ,  (endRingFinger  + startRingFinger )/2 ] )  
                 curMiddleFingerC.append( [ rowIter , (endMiddleFinger + startMiddleFinger)/2 ] ) 
                 curPointFingerC.append( [ rowIter , (endPointFinger + startPointFinger)/2 ] )
+                curPointingFingerWidht = endPointFinger - startPointFinger
                 
             else:
                 current8OrderCount = 0
@@ -209,6 +214,7 @@ class AgeDetermination:
                 maxRingFingerCenters = curRingFingerC
                 maxMiddleFingerCenters = curMiddleFingerC
                 maxPointFingerCenters = curPointFingerC
+                maxPointingFingerWidht = curPointingFingerWidht # used later fro daumen
                 
             
                 
@@ -217,7 +223,7 @@ class AgeDetermination:
         detectedFingerRatio = float(currentMax8OrderCount) / float(maskH)
         
         if  detectedFingerRatio < 0.05 :# continous distance needs to be at least 10% of image height
-            return False, [], [], [], []
+            return False, [], [], [], [], []
         
         # continous growing
         maxLittleFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxLittleFingerCenters )
@@ -225,7 +231,44 @@ class AgeDetermination:
         maxMiddleFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxMiddleFingerCenters )
         maxPointFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxPointFingerCenters )
         
-        return True, maxLittleFingerCenters, maxRingFingerCenters, maxMiddleFingerCenters, maxPointFingerCenters
+        # detect Daumen downwards right of pointing finger
+        lastPointingFingerPos = maxPointFingerCenters[-1]
+        peakTableSize = dRowMaskIsPeak.shape
+        DaumenCenters = []
+        for rowIter in range(lastPointingFingerPos[0], peakTableSize[0]):
+            currentRowPeaks = dRowMaskIsPeak[rowIter,:]
+            currentRowPeaksSize = currentRowPeaks.shape
+            endDaumen = 0
+            startDaumen = 0
+            ctrlPoint = 0
+            cPeakIdx = 0
+            
+            for cRowPeakIter in range( currentRowPeaksSize[0] -1 , 0, -1) : # starting from right
+                if currentRowPeaks[cRowPeakIter] :    
+                    if cPeakIdx == 0:
+                        endDaumen = cRowPeakIter
+                        
+                    if cPeakIdx == 1:
+                        startDaumen = cRowPeakIter
+                        
+                    if cPeakIdx == 2:
+                        ctrlPoint = cRowPeakIter
+                        
+                    cPeakIdx = cPeakIdx + 1
+            
+            minDaumenIdxBorder = lastPointingFingerPos[1] + maxPointingFingerWidht
+            if startDaumen > minDaumenIdxBorder : # -> end and start daumen are set
+                DaumenCenters.append( [ rowIter ,  (endDaumen  + startDaumen )/2 ] )
+                break
+        
+        DaumenCenters = self.continue_central_line( dRowMaskIsPeak, DaumenCenters )
+        
+        
+                
+                
+                
+        
+        return True, maxLittleFingerCenters, maxRingFingerCenters, maxMiddleFingerCenters, maxPointFingerCenters, DaumenCenters
         
         
         for i in maxLittleFingerCenters:
