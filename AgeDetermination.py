@@ -30,6 +30,7 @@ from regiongrowing import *
 
 
 
+# Todo: check img 14
 
 class AgeDetermination:
     
@@ -60,6 +61,25 @@ class AgeDetermination:
             print "Finger Detection Failed"
             return handmask
         
+        ltFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(littleFingerLine, numpyImage) )
+        ringFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(ringFingerLine, numpyImage) )
+        middleFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(middleFingerLine, numpyImage) )
+        pointingFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(pointingFingerLine, numpyImage) )
+        daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage) )
+        
+        fingerLineArrays = []
+        fingerLineArrays.append(littleFingerLine)
+        fingerLineArrays.append(ringFingerLine)
+        fingerLineArrays.append(middleFingerLine)
+        fingerLineArrays.append(pointingFingerLine)
+        fingerLineArrays.append(daumenFingerLine)
+        
+        jointsArrays = []
+        jointsArrays.append(ltFingerJointsIdx)
+        jointsArrays.append(ringFingerJointsIdx)
+        jointsArrays.append(middleFingerJointsIdx)
+        jointsArrays.append(pointingFingerJointsIdx)
+        jointsArrays.append(daumenJointsIdx)
         
         plt.imshow(xRay_without_background, cmap=cm.Greys_r)
         for i in littleFingerLine:
@@ -72,10 +92,22 @@ class AgeDetermination:
             plt.plot(i[1], i[0], ".r")
         for i in daumenFingerLine:
             plt.plot(i[1], i[0], ".r")
+           
+        for idx in range(0,len(jointsArrays)) :
+            currentFingerJoints = jointsArrays[idx]
+            currentCenterLine = fingerLineArrays[idx]
+            for joint in currentFingerJoints:
+                arrIdx = int(joint[0])
+                coord = currentCenterLine[ arrIdx ]
+                plt.plot( coord[1], coord[0], ".b")
+            
+           
                         
-        #plt.ylim([0,imgH])
-        #plt.xlim([0,imgW])
         plt.show() 
+        
+       
+        
+        
    
         
         
@@ -375,7 +407,28 @@ class AgeDetermination:
             currentCenters.insert(0, [i,center])
                      
         return currentCenters     
+                    
     
+    def get_closest_lower_and_upper_true_idx( self, array1D, targetIdx ):
+        arrSh = array1D.shape
+        lowIdx = 0
+        upIdx = 0
+        minLowDist = 9999999999
+        minUpDist = 9999999999
+        for i in range(0, arrSh[0]) :
+            if array1D[i] :
+                dist = i - targetIdx
+                if dist < 0 : # lower idx
+                    if (dist*dist) < minLowDist :
+                        minLowDist = (dist*dist)
+                        lowIdx = i
+                if dist > 0 : # uper idx
+                    if (dist*dist) < minUpDist :
+                        minUpDist = (dist*dist)
+                        upIdx = i
+        
+        return lowIdx, upIdx
+     
     def interpolate_central_lines(self, currentCenters):
         
         #interpolate downwards along direction vector of last third
@@ -401,28 +454,63 @@ class AgeDetermination:
             currentCenters.append([y,x])
             
         return currentCenters
-                
     
-    def get_closest_lower_and_upper_true_idx( self, array1D, targetIdx ):
-        arrSh = array1D.shape
-        lowIdx = 0
-        upIdx = 0
-        minLowDist = 9999999999
-        minUpDist = 9999999999
-        for i in range(0, arrSh[0]) :
-            if array1D[i] :
-                dist = i - targetIdx
-                if dist < 0 : # lower idx
-                    if (dist*dist) < minLowDist :
-                        minLowDist = (dist*dist)
-                        lowIdx = i
-                if dist > 0 : # uper idx
-                    if (dist*dist) < minUpDist :
-                        minUpDist = (dist*dist)
-                        upIdx = i
+    def read_intensities_of_point_set(self, pointset, img):
+        h,w = img.shape
         
-        return lowIdx, upIdx
+        intensities = []
+        
+        for point in pointset :
+            y = point[0]
+            x = point[1]
+            
+            i = 0.0
+            
+            if x >= 0 and y >= 0 and x < w and y < h :
+                i = float( img[y,x] )
+            
+            intensities.append(i)
+        
+        return intensities
+    
+    def find_joints_from_intensities(self, intensities):
+        
+        nI = len(intensities)
+        
+        wSizeHalf = nI/10/2
+        
+        diffArr = np.zeros(nI)
+        for i in range(wSizeHalf, nI-wSizeHalf):
+            w = intensities[i-wSizeHalf:i+wSizeHalf]
+            wMin = np.min(w)
+            wMax = np.max(w)
+            wDiff = wMax - wMin
+            diffArr[i] = wDiff
+            
+        sumDiffArr = np.zeros(nI)
+        for i in range(wSizeHalf, nI-wSizeHalf):
+            w = intensities[i-wSizeHalf:i+wSizeHalf]
+            dw = np.diff(w)
+            dAccum = 0
+            for dwi in dw:
+                dAccum = dAccum + abs(dwi)
+            sumDiffArr[i] = dAccum
+            
+        peaks, valeys = peakdet.peakdet(sumDiffArr, 1500)
+        
+        return peaks
+        #peakTable = np.zeros(nI)
+        #for pk in peaks:
+        #    peakTable[ int(pk[0]) ] = pk[1]
                     
+        
+        #plt.plot( intensities )
+        #plt.plot( diffArr )
+        #plt.plot( sumDiffArr )
+        #plt.plot( peakTable )
+        #plt.show()
+            
+              
       
     def get_XRay_BG_Threshold(self, pilImage ):
     
