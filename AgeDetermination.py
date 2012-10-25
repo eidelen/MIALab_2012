@@ -231,6 +231,7 @@ class AgeDetermination:
         maxMiddleFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxMiddleFingerCenters )
         maxPointFingerCenters = self.continue_central_line( dRowMaskIsPeak, maxPointFingerCenters )
         
+                
         # detect Daumen downwards right of pointing finger
         lastPointingFingerPos = maxPointFingerCenters[-1]
         peakTableSize = dRowMaskIsPeak.shape
@@ -264,6 +265,12 @@ class AgeDetermination:
         DaumenCenters = self.continue_central_line( dRowMaskIsPeak, DaumenCenters )
         
         
+        # Central Line Interpolation
+        maxLittleFingerCenters = self.interpolate_central_lines(maxLittleFingerCenters)
+        maxRingFingerCenters = self.interpolate_central_lines(maxRingFingerCenters)
+        maxMiddleFingerCenters = self.interpolate_central_lines(maxMiddleFingerCenters)
+        maxPointFingerCenters = self.interpolate_central_lines(maxPointFingerCenters)
+        DaumenCenters = self.interpolate_central_lines(DaumenCenters)
                 
                 
                 
@@ -368,6 +375,33 @@ class AgeDetermination:
             currentCenters.insert(0, [i,center])
                      
         return currentCenters     
+    
+    def interpolate_central_lines(self, currentCenters):
+        
+        #interpolate downwards along direction vector of last third
+        centerCount = len(currentCenters)
+        
+        # y = a*x + b -> a = (p1y-p0y)/(p1x-p0x)
+        # b = y-(a*x) = p0y-(a*p0x)
+        # interpolate by x = (y-b)/a
+        
+        p0 = currentCenters[centerCount/3*2]
+        p1 = currentCenters[-1]
+        
+        p0x = float(p0[1])
+        p0y = float(p0[0])
+        p1x = float(p1[1])
+        p1y = float(p1[0])
+        
+        a = (p1y-p0y)/(p1x-p0x)
+        b = p0y-(a*p0x)
+        
+        for y in range(p1[0], p1[0] + centerCount/3*2): #continue line by 2/3 of original length
+            x = (y-b)/a
+            currentCenters.append([y,x])
+            
+        return currentCenters
+                
     
     def get_closest_lower_and_upper_true_idx( self, array1D, targetIdx ):
         arrSh = array1D.shape
