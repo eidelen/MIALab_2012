@@ -82,20 +82,19 @@ class AgeDetermination:
         jointsArrays.append(daumenJointsIdx)
         
         plt.imshow(xRay_without_background, cmap=cm.Greys_r)
-        for i in littleFingerLine:
-            plt.plot(i[1], i[0], ".r")
-        for i in ringFingerLine:
-            plt.plot(i[1], i[0], ".r")
-        for i in middleFingerLine:
-            plt.plot(i[1], i[0], ".r")
-        for i in pointingFingerLine:
-            plt.plot(i[1], i[0], ".r")
-        for i in daumenFingerLine:
-            plt.plot(i[1], i[0], ".r")
            
         for idx in range(0,len(jointsArrays)) :
             currentFingerJoints = jointsArrays[idx]
             currentCenterLine = fingerLineArrays[idx]
+            
+            xData = []
+            yData = []
+            for i in currentCenterLine:
+                xData.append(i[1])
+                yData.append(i[0])
+                
+            plt.plot(xData, yData, "r")
+            
             for joint in currentFingerJoints:
                 arrIdx = int(joint[0])
                 coord = currentCenterLine[ arrIdx ]
@@ -266,6 +265,11 @@ class AgeDetermination:
                 
         # detect Daumen downwards right of pointing finger
         lastPointingFingerPos = maxPointFingerCenters[-1]
+        minRightPosition = lastPointingFingerPos[1]
+        
+        minDaumenThickness = maxPointingFingerWidht*0.2
+        maxDaumenThickness = maxPointingFingerWidht*2.5
+        
         peakTableSize = dRowMaskIsPeak.shape
         DaumenCenters = []
         for rowIter in range(lastPointingFingerPos[0], peakTableSize[0]):
@@ -289,12 +293,16 @@ class AgeDetermination:
                         
                     cPeakIdx = cPeakIdx + 1
             
-            minDaumenIdxBorder = lastPointingFingerPos[1] + maxPointingFingerWidht
-            if startDaumen > minDaumenIdxBorder : # -> end and start daumen are set
+            currentDaumenThickness = endDaumen - startDaumen
+            if startDaumen > minRightPosition and currentDaumenThickness < maxDaumenThickness and currentDaumenThickness > minDaumenThickness : # -> end and start daumen are set
                 DaumenCenters.append( [ rowIter ,  (endDaumen  + startDaumen )/2 ] )
                 break
         
         DaumenCenters = self.continue_central_line( dRowMaskIsPeak, DaumenCenters )
+        
+        if len(DaumenCenters) == 0 :
+            plt.imshow(handmaskImage)
+            plt.show()
         
         
         # Central Line Interpolation
@@ -370,20 +378,30 @@ class AgeDetermination:
         return True
     
     def continue_central_line(self, peaks, currentCenters ):
-        thicknessDiffThreshold = 10
+        
+        if len(currentCenters) == 0:
+            print "continue_central_line invalid argument"
+            return []
+            
         
         h, w = peaks.shape
         
         # growing downwards
         lastPoint = currentCenters[-1]
         lastCenter = lastPoint[1]     
+        lowIdx, upIdx = self.get_closest_lower_and_upper_true_idx(peaks[ lastPoint[0] , :], lastCenter )
+        firstThickness = upIdx - lowIdx
+        minThickness = firstThickness * 0.5
+        maxThickness = firstThickness * 2.0
+        
         for i in range( lastPoint[0] , h) :
             lowIdx, upIdx = self.get_closest_lower_and_upper_true_idx(peaks[i,:], lastCenter )
             
             center = (upIdx + lowIdx)/2   
             diffCenter = center - lastCenter
+            currentThickness = upIdx - lowIdx
             
-            if np.sqrt(diffCenter*diffCenter) > 5 : # stop the process when thickness difference becomes to big
+            if np.sqrt(diffCenter*diffCenter) > 5 or currentThickness < minThickness or currentThickness > maxThickness: # stop the process when thickness difference becomes to big
                 break
             
             lastCenter = center
@@ -398,8 +416,9 @@ class AgeDetermination:
             
             center = (upIdx + lowIdx)/2   
             diffCenter = center - firstCenter
+            currentThickness = upIdx - lowIdx
             
-            if np.sqrt(diffCenter*diffCenter) > 5 : # stop the process when thickness difference becomes to big
+            if np.sqrt(diffCenter*diffCenter) > 5 or currentThickness < minThickness or currentThickness > maxThickness: # stop the process when thickness difference becomes to big
                 break
             
             firstCenter = center
@@ -431,6 +450,10 @@ class AgeDetermination:
      
     def interpolate_central_lines(self, currentCenters):
         
+        if len(currentCenters) == 0:
+            print "interpolate_central_lines - invalid argument"
+            return []
+        
         #interpolate downwards along direction vector of last third
         centerCount = len(currentCenters)
         
@@ -449,7 +472,7 @@ class AgeDetermination:
         a = (p1y-p0y)/(p1x-p0x)
         b = p0y-(a*p0x)
         
-        for y in range(p1[0], p1[0] + centerCount/3*2): #continue line by 2/3 of original length
+        for y in range(p1[0], p1[0] + centerCount/4*3): #continue line by 2/3 of original length
             x = (y-b)/a
             currentCenters.append([y,x])
             
@@ -513,12 +536,24 @@ class AgeDetermination:
               
       
     def get_XRay_BG_Threshold(self, pilImage ):
+        
+        # remove 0 value pixel
+        histData = []
+        
+        h,w = pilImage.shape
+        for y in range(0,h):
+            for x in range(0,w):
+                val = pilImage[y,x]
+                if not val == 0:
+                    histData.append(val)
+            
     
-        grayhist, bins = np.histogram(pilImage.flatten(),  200 )
+        grayhist, bins = np.histogram( histData, 200 ) #pilImage.flatten(),  200 )
    
         avgHistCounts = np.mean(grayhist)
         minimumPeakDiff = avgHistCounts * 0.20
         peaks, valeys = peakdet.peakdet(grayhist, minimumPeakDiff)
+        
     
         # max peak is background
         maxPeakIdx= np.argmax(peaks[:,1])
@@ -529,7 +564,7 @@ class AgeDetermination:
         val2 = bins[idx1]
 
         # set threshold between bg peak and next one
-        threshVal = (val2 - val1) * 0.5  + val1
+        threshVal = (val2 + val1) / 2
     
         #plt.plot(grayhist)
         #plt.show()
