@@ -27,14 +27,16 @@ from scipy.ndimage.measurements import label
 import cv2
 import peakdet
 from regiongrowing import *
+from numpy.linalg.linalg import norm
 
 
 
-# Todo: check img 14
+# Todo: check img 14, 4
 
 class AgeDetermination:
     
     def detect_joints_of_interest(self, numpyImage ):
+
         
         # cut lower part of the image 
         imgH, imgW = numpyImage.shape
@@ -67,6 +69,8 @@ class AgeDetermination:
         pointingFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(pointingFingerLine, numpyImage) )
         daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage) )
         
+        
+        
         fingerLineArrays = []
         fingerLineArrays.append(littleFingerLine)
         fingerLineArrays.append(ringFingerLine)
@@ -81,38 +85,8 @@ class AgeDetermination:
         jointsArrays.append(pointingFingerJointsIdx)
         jointsArrays.append(daumenJointsIdx)
         
-        plt.imshow(xRay_without_background, cmap=cm.Greys_r)
-           
-        for idx in range(0,len(jointsArrays)) :
-            currentFingerJoints = jointsArrays[idx]
-            currentCenterLine = fingerLineArrays[idx]
-            
-            xData = []
-            yData = []
-            for i in currentCenterLine:
-                xData.append(i[1])
-                yData.append(i[0])
-                
-            plt.plot(xData, yData, "r")
-            
-            for joint in currentFingerJoints:
-                arrIdx = int(joint[0])
-                coord = currentCenterLine[ arrIdx ]
-                plt.plot( coord[1], coord[0], ".b")
-            
-           
-                        
-        plt.show() 
-        
-       
-        
-        
-   
-        
-        
-        
-        
-        
+        self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, 100)
+
         return xRay_without_background
          
         
@@ -500,40 +474,49 @@ class AgeDetermination:
         
         nI = len(intensities)
         
-        wSizeHalf = nI/10/2
-        
-        diffArr = np.zeros(nI)
-        for i in range(wSizeHalf, nI-wSizeHalf):
-            w = intensities[i-wSizeHalf:i+wSizeHalf]
-            wMin = np.min(w)
-            wMax = np.max(w)
-            wDiff = wMax - wMin
-            diffArr[i] = wDiff
+        wSizeHalf = 30
             
         sumDiffArr = np.zeros(nI)
+        avgDiffArr = 0
+        count = 0
+        max = 0
         for i in range(wSizeHalf, nI-wSizeHalf):
             w = intensities[i-wSizeHalf:i+wSizeHalf]
             dw = np.diff(w)
             dAccum = 0
             for dwi in dw:
                 dAccum = dAccum + abs(dwi)
+                
             sumDiffArr[i] = dAccum
+            avgDiffArr = avgDiffArr + dAccum
+            count = count + 1
+            if max < dAccum :
+                max = dAccum
             
-        peaks, valeys = peakdet.peakdet(sumDiffArr, 1500)
         
+        avgDiffArr = avgDiffArr/count
+        peakThreshold = (max - avgDiffArr) / 2.0
+        print "Joint Detection DiffWin Threshold %d " % peakThreshold
+        
+        modPeaks, valeys = peakdet.peakdet(sumDiffArr[wSizeHalf:nI-wSizeHalf], peakThreshold)
+        # correct peak index
+        peaks = [];
+        for pk in modPeaks:
+            peaks.append([ pk[0]+wSizeHalf, pk[1] ])
+           
+        # uncomment if you want to see graphs 
         return peaks
-        #peakTable = np.zeros(nI)
-        #for pk in peaks:
-        #    peakTable[ int(pk[0]) ] = pk[1]
-                    
         
-        #plt.plot( intensities )
-        #plt.plot( diffArr )
-        #plt.plot( sumDiffArr )
-        #plt.plot( peakTable )
-        #plt.show()
+        peakTable = np.zeros(nI)
+        for pk in peaks:
+            peakTable[ int(pk[0]) ] = pk[1] 
+                    
+        plt.plot( intensities )
+        plt.plot( sumDiffArr )
+        plt.plot( peakTable )
+        plt.show()
             
-              
+        return peaks      
       
     def get_XRay_BG_Threshold(self, pilImage ):
         
@@ -571,6 +554,69 @@ class AgeDetermination:
     
         return threshVal
     
+    def compute_rotated_rect(self, directionVector, centerPoint, sideLength):
+        
+        # working in x-y order
+             
+        rotMatrix = np.matrix( (( 0, -1), ( 1,  0)) ) # 90 deg rotation
+        
+        udV1 = directionVector / norm( directionVector )
+        udV2 = rotMatrix * udV1  # rotate by 90 degree
+        
+        centerP = np.array( [[ centerPoint[1] ],[ centerPoint[0] ]] )
+        
+        p1 = centerP + udV1*sideLength*0.5 - udV2*sideLength*0.5
+        p2 = p1 + udV2*sideLength
+        p3 = p2 - udV1*sideLength
+        p4 = p3 - udV2*sideLength
+        
+        # convert to y-x space
+        rect = []
+        rect.append([ p1[1,0], p1[0,0] ])
+        rect.append([ p2[1,0], p2[0,0] ])
+        rect.append([ p3[1,0], p3[0,0] ])
+        rect.append([ p4[1,0], p4[0,0] ])
+        
+        return rect
+    
+    def draw_joints_to_img(self, img, fingers, joints, rectSideLength):
+        
+        plt.imshow(img, cmap=cm.Greys_r)
+           
+        jRect = rectSideLength
+        
+        for idx in range(0,len(joints)) :
+            currentFingerJoints = joints[idx]
+            currentCenterLine = fingers[idx]
+            
+            xData = []
+            yData = []
+            for i in currentCenterLine:
+                xData.append(i[1])
+                yData.append(i[0])
+                
+            plt.plot(xData, yData, "r")
+            
+            for joint in currentFingerJoints:
+                arrIdx = int(joint[0])
+                coord = currentCenterLine[ arrIdx ]
+                                
+                plt.plot( coord[1], coord[0], ".b")
+                                     
+                # get direction vect
+                p0V = np.array( [[ currentCenterLine[ arrIdx-5 ][1] ],[ currentCenterLine[ arrIdx-5 ][0] ]] )
+                p1V = np.array( [[ currentCenterLine[ arrIdx+5 ][1] ],[ currentCenterLine[ arrIdx+5 ][0] ]] )
+                dV = p1V - p0V 
+                rect = self.compute_rotated_rect( dV, coord, jRect )
+                
+                rectX = [ rect[0][1], rect[1][1], rect[2][1], rect[3][1], rect[0][1] ]
+                rectY = [ rect[0][0], rect[1][0], rect[2][0], rect[3][0], rect[0][0] ]
+                plt.plot(rectX, rectY, "r")
+                               
+                        
+        plt.show() 
+
+
     def remove_skin(self, imgNoBG, bgMask ):
         # kind of growing region :) , which is started only
         # at borders from background to object... what is 
