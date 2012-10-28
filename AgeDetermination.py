@@ -2,6 +2,7 @@
 
 # TODO: Check what packets are realy used!
 
+import math
 import Image 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -24,10 +25,13 @@ from skimage.measure import regionprops
 from cProfile import label
 from scipy.ndimage.measurements import label
 
-import cv2
 import peakdet
 from regiongrowing import *
 from numpy.linalg.linalg import norm
+from mpl_toolkits.axisartist.clip_path import atan2
+import scipy
+from numpy.lib.scimath import sqrt
+from IPython.core.display import Math
 
 
 
@@ -36,6 +40,10 @@ from numpy.linalg.linalg import norm
 class AgeDetermination:
     
     def detect_joints_of_interest(self, numpyImage ):
+        
+        # settings
+        joint_windows_size = 60
+        joint_rect_size = 140
 
         
         # cut lower part of the image 
@@ -63,30 +71,50 @@ class AgeDetermination:
             print "Finger Detection Failed"
             return handmask
         
-        ltFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(littleFingerLine, numpyImage) )
-        ringFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(ringFingerLine, numpyImage) )
-        middleFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(middleFingerLine, numpyImage) )
-        pointingFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(pointingFingerLine, numpyImage) )
-        daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage) )
+        ltFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(littleFingerLine, numpyImage), joint_windows_size )
+        ringFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(ringFingerLine, numpyImage), joint_windows_size )
+        middleFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(middleFingerLine, numpyImage) , joint_windows_size)
+        pointingFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(pointingFingerLine, numpyImage) , joint_windows_size)
+        daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage), joint_windows_size )
         
         
         
         fingerLineArrays = []
         fingerLineArrays.append(littleFingerLine)
-        fingerLineArrays.append(ringFingerLine)
+        #fingerLineArrays.append(ringFingerLine)
         fingerLineArrays.append(middleFingerLine)
-        fingerLineArrays.append(pointingFingerLine)
+        #fingerLineArrays.append(pointingFingerLine)
         fingerLineArrays.append(daumenFingerLine)
         
         jointsArrays = []
         jointsArrays.append(ltFingerJointsIdx)
-        jointsArrays.append(ringFingerJointsIdx)
+        #jointsArrays.append(ringFingerJointsIdx)
         jointsArrays.append(middleFingerJointsIdx)
-        jointsArrays.append(pointingFingerJointsIdx)
+        #jointsArrays.append(pointingFingerJointsIdx)
         jointsArrays.append(daumenJointsIdx)
         
-        self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, 100)
-
+        cropedJointsLittleFinger = self.crop_joint( xRay_without_background, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
+        cropedJointsMiddleFinger = self.crop_joint( xRay_without_background, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
+        cropedJointsDaumen = self.crop_joint( xRay_without_background, daumenFingerLine, daumenJointsIdx, joint_rect_size)
+        
+        self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, joint_rect_size)
+        
+        plotCnt = 1
+        for i in range(0,len(cropedJointsLittleFinger)):
+            plt.subplot(3,3,plotCnt)
+            plt.imshow(cropedJointsLittleFinger[i], cmap=cm.Greys_r)
+            plotCnt = plotCnt + 1
+        for i in range(0,len(cropedJointsMiddleFinger)):
+            plt.subplot(3,3,plotCnt)
+            plt.imshow(cropedJointsMiddleFinger[i], cmap=cm.Greys_r)
+            plotCnt = plotCnt + 1
+        for i in range(0,len(cropedJointsDaumen)):
+            plt.subplot(3,3,plotCnt)
+            plt.imshow(cropedJointsDaumen[i], cmap=cm.Greys_r)
+            plotCnt = plotCnt + 1
+            
+        plt.show()
+            
         return xRay_without_background
          
         
@@ -470,11 +498,11 @@ class AgeDetermination:
         
         return intensities
     
-    def find_joints_from_intensities(self, intensities):
+    def find_joints_from_intensities(self, intensities, wSize ):
         
         nI = len(intensities)
         
-        wSizeHalf = 30
+        wSizeHalf = wSize / 2
             
         sumDiffArr = np.zeros(nI)
         avgDiffArr = 0
@@ -579,7 +607,7 @@ class AgeDetermination:
         
         return rect
     
-    def draw_joints_to_img(self, img, fingers, joints, rectSideLength):
+    def draw_joints_to_img(self, img, fingers, joints, rectSideLength ):
         
         plt.imshow(img, cmap=cm.Greys_r)
            
@@ -612,10 +640,43 @@ class AgeDetermination:
                 rectX = [ rect[0][1], rect[1][1], rect[2][1], rect[3][1], rect[0][1] ]
                 rectY = [ rect[0][0], rect[1][0], rect[2][0], rect[3][0], rect[0][0] ]
                 plt.plot(rectX, rectY, "r")
-                               
-                        
+        
+                                             
         plt.show() 
 
+    def crop_joint(self, img, finger, joints, rectSideLength):
+           
+        cropedJoints = [] 
+        for joint in joints:
+            arrIdx = int(joint[0])
+            coord = finger[ arrIdx ]
+            xc = coord[1]
+            yc = coord[0]
+                                   
+            # compute angle
+            p0V = np.array( [[ finger[ arrIdx-5 ][1] ],[ finger[ arrIdx-5 ][0] ]] )
+            p1V = np.array( [[ finger[ arrIdx+5 ][1] ],[ finger[ arrIdx+5 ][0] ]] )
+            dV = p1V - p0V 
+            refV = np.array( [[ 0.0 ],[ 1.0 ]] )
+            angle = atan2( refV[0]*dV[1] - refV[1]*dV[0], refV[0]*dV[0] + refV[1]*dV[1] )
+            angleDeg = math.degrees(angle)
+             
+            # crop, rotate and recrop
+            cropWidhtH = int( sqrt( rectSideLength * rectSideLength / 2 ) )
+            ystart = yc-cropWidhtH
+            yend = yc+cropWidhtH
+            xstart = xc-cropWidhtH
+            xend = xc+cropWidhtH
+            crop = img[ ystart:yend, xstart:xend]
+            
+            cropRot = scipy.ndimage.interpolation.rotate(crop, angleDeg, reshape=False )
+            
+            #recrop
+            cropRot = cropRot[ cropWidhtH-(rectSideLength/2):cropWidhtH+(rectSideLength/2),cropWidhtH-(rectSideLength/2):cropWidhtH+(rectSideLength/2)]
+            
+            cropedJoints.append(cropRot)
+        
+        return cropedJoints
 
     def remove_skin(self, imgNoBG, bgMask ):
         # kind of growing region :) , which is started only
