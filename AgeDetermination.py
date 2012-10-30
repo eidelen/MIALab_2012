@@ -93,9 +93,9 @@ class AgeDetermination:
         #jointsArrays.append(pointingFingerJointsIdx)
         jointsArrays.append(daumenJointsIdx)
         
-        cropedJointsLittleFinger = self.crop_joint( xRay_without_background, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
-        cropedJointsMiddleFinger = self.crop_joint( xRay_without_background, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
-        cropedJointsDaumen = self.crop_joint( xRay_without_background, daumenFingerLine, daumenJointsIdx, joint_rect_size)
+        croppedJointsLittleFinger = self.crop_joint( xRay_without_background, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
+        croppedJointsMiddleFinger = self.crop_joint( xRay_without_background, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
+        croppedJointsDaumen = self.crop_joint( xRay_without_background, daumenFingerLine, daumenJointsIdx, joint_rect_size)
         
         self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, joint_rect_size)
         
@@ -115,7 +115,8 @@ class AgeDetermination:
             
         plt.show()
             
-        return xRay_without_background
+        #return xRay_without_background
+	return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
          
         
     def get_hand_mask(self, numpyImage):
