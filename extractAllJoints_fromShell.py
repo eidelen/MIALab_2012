@@ -13,8 +13,8 @@ directory = '../extractedJoints'
 if not os.path.exists(directory):
     os.makedirs(directory)
 
-for i in range(0,len(scores)-1):
-	if(i+1==4 or i+1==7 or i+1 ==12):
+for i in range(21,len(scores)-1):
+	if(i+1==4 or i+1==7 or i+1 ==12 or i+1==21 or i+1==22 or i+1==27 or i+1==31):
 		# for all datasets that make the program fail (Aedu, fix if you have time)
 		continue
 
