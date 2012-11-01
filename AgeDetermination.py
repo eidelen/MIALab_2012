@@ -46,7 +46,7 @@ class AgeDetermination:
         joint_rect_size = 140
 
         
-        # cut lower part of the image 
+        # cut lower part of the image by 100
         imgH, imgW = numpyImage.shape
         numpyImage = numpyImage[0:(imgH-100),:]
         imgH, imgW = numpyImage.shape
@@ -72,9 +72,9 @@ class AgeDetermination:
             return handmask
         
         ltFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(littleFingerLine, numpyImage), joint_windows_size )
-        ringFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(ringFingerLine, numpyImage), joint_windows_size )
+        #ringFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(ringFingerLine, numpyImage), joint_windows_size )
         middleFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(middleFingerLine, numpyImage) , joint_windows_size)
-        pointingFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(pointingFingerLine, numpyImage) , joint_windows_size)
+        #pointingFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(pointingFingerLine, numpyImage) , joint_windows_size)
         daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage), joint_windows_size )
         
         
@@ -125,6 +125,14 @@ class AgeDetermination:
         thresh = self.get_XRay_BG_Threshold( numpyImage )
         treshMask = numpyImage > thresh
         
+        h, w = treshMask.shape
+        
+        # set sites and top to zero as well
+        border = 10
+        treshMask[0:border,:] = 0
+        treshMask[:,0:border] = 0
+        treshMask[:,(w-border):w] = 0
+        
         labeled, nr_objects = label( treshMask )
         print "Number of objects found is %d " % nr_objects
         
@@ -135,7 +143,7 @@ class AgeDetermination:
         print "size of %d " % label_sizes[idx_of_biggest_label]
         
         # our object should fill at least 20 % of the whole image
-        h, w = treshMask.shape
+        
         areaRatio = label_sizes[idx_of_biggest_label] / (h*w)
         if areaRatio > 0.2 :
             success = True
@@ -500,6 +508,7 @@ class AgeDetermination:
     
     def find_joints_from_intensities(self, intensities, wSize ):
         
+               
         nI = len(intensities)
         
         wSizeHalf = wSize / 2
@@ -521,6 +530,10 @@ class AgeDetermination:
             if max < dAccum :
                 max = dAccum
             
+        
+        if count == 0 :
+            print "find_joints_from_intensities to small fingerline error"
+            return []
         
         avgDiffArr = avgDiffArr/count
         peakThreshold = (max - avgDiffArr) / 2.0
