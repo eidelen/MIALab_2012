@@ -122,8 +122,8 @@ class AgeDetermination:
             plt.show()
             
         #return xRay_without_background
-	#return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
-	return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger, "thumb": croppedJointsDaumen }
+    #return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
+        return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger, "thumb": croppedJointsDaumen }
          
         
     def get_hand_mask(self, numpyImage):
@@ -565,7 +565,7 @@ class AgeDetermination:
                                  
            
         # uncomment if you want to see graphs 
-        #return peaks
+        return peaks
         
         peakTable = np.zeros(nI)
         for pk in peaks:
@@ -746,4 +746,4 @@ class AgeDetermination:
 
     def setVerbosity(self,verbosity):
 
-	       self.verbosity=verbosity
+        self.verbosity=verbosity
