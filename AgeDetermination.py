@@ -59,7 +59,9 @@ class AgeDetermination:
         success, handmask = self.get_hand_mask(numpyImage)
         if not success :
             print "Background Segmentation failed"
-            return handmask
+            plt.imshow(handmask)
+            plt.show()
+            return 
         
         xRay_without_background = self.remove_background(numpyImage, handmask)
 
@@ -71,7 +73,9 @@ class AgeDetermination:
         success, littleFingerLine, ringFingerLine, middleFingerLine, pointingFingerLine, daumenFingerLine = self.get_fingers_of_interest( handmask )
         if not success :
             print "Finger Detection Failed"
-            return handmask
+            plt.imshow(handmask)
+            plt.show()
+            return 
         
         ltFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(littleFingerLine, numpyImage), joint_windows_size )
         #ringFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(ringFingerLine, numpyImage), joint_windows_size )
@@ -98,24 +102,24 @@ class AgeDetermination:
         croppedJointsLittleFinger = self.crop_joint( xRay_without_background, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
         croppedJointsMiddleFinger = self.crop_joint( xRay_without_background, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
         croppedJointsDaumen = self.crop_joint( xRay_without_background, daumenFingerLine, daumenJointsIdx, joint_rect_size)
-        
+
         if(self.verbosity > 0):
-		self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, joint_rect_size)
-		plotCnt = 1
-	        for i in range(0,len(croppedJointsLittleFinger)):
-	            plt.subplot(3,3,plotCnt)
-	            plt.imshow(croppedJointsLittleFinger[i], cmap=cm.Greys_r)
-	            plotCnt = plotCnt + 1
-	        for i in range(0,len(croppedJointsMiddleFinger)):
-	            plt.subplot(3,3,plotCnt)
-	            plt.imshow(croppedJointsMiddleFinger[i], cmap=cm.Greys_r)
-	            plotCnt = plotCnt + 1
-	        for i in range(0,len(croppedJointsDaumen)):
-	            plt.subplot(3,3,plotCnt)
-	            plt.imshow(croppedJointsDaumen[i], cmap=cm.Greys_r)
-	            plotCnt = plotCnt + 1
+            self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, joint_rect_size)
+            plotCnt = 1
+            for i in range(0,len(croppedJointsLittleFinger)):
+                plt.subplot(3,3,plotCnt)
+                plt.imshow(croppedJointsLittleFinger[i], cmap=cm.Greys_r)
+                plotCnt = plotCnt + 1
+            for i in range(0,len(croppedJointsMiddleFinger)):
+                plt.subplot(3,3,plotCnt)
+                plt.imshow(croppedJointsMiddleFinger[i], cmap=cm.Greys_r)
+                plotCnt = plotCnt + 1
+            for i in range(0,len(croppedJointsDaumen)):
+                plt.subplot(3,3,plotCnt)
+                plt.imshow(croppedJointsDaumen[i], cmap=cm.Greys_r)
+                plotCnt = plotCnt + 1
             
-        	plt.show()
+            plt.show()
             
         #return xRay_without_background
 	#return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
@@ -512,8 +516,7 @@ class AgeDetermination:
         return intensities
     
     def find_joints_from_intensities(self, intensities, wSize ):
-        
-               
+            
         nI = len(intensities)
         
         wSizeHalf = wSize / 2
@@ -541,7 +544,7 @@ class AgeDetermination:
             return []
         
         avgDiffArr = avgDiffArr/count
-        peakThreshold = (max - avgDiffArr) / 2.0
+        peakThreshold = (max - avgDiffArr) / 3.0
         print "Joint Detection DiffWin Threshold %d " % peakThreshold
         
         modPeaks, valeys = peakdet.peakdet(sumDiffArr[wSizeHalf:nI-wSizeHalf], peakThreshold)
@@ -549,19 +552,30 @@ class AgeDetermination:
         peaks = [];
         for pk in modPeaks:
             peaks.append([ pk[0]+wSizeHalf, pk[1] ])
+       
+        
+        nbrOfPeaks = len( peaks )    
+        if nbrOfPeaks > 3:
+            # remove first peak if too close to beginning
+            if peaks[0][0] < nI*0.05 :
+                peaks.remove(peaks[0])
+             
+            # just remove all peaks after the 3 first :))    
+            peaks = peaks[0:3]
+                                 
            
         # uncomment if you want to see graphs 
-        return peaks
+        #return peaks
         
         peakTable = np.zeros(nI)
         for pk in peaks:
             peakTable[ int(pk[0]) ] = pk[1] 
                     
-	if(self.verbosity>0):
-	        plt.plot( intensities )
-	        plt.plot( sumDiffArr )
-	        plt.plot( peakTable )
-	        plt.show()
+        if(self.verbosity>0):
+            plt.plot( intensities )
+            plt.plot( sumDiffArr )
+            plt.plot( peakTable )
+            plt.show()
             
         return peaks      
       
@@ -730,6 +744,6 @@ class AgeDetermination:
                     
         return skinMask
 
-def setVerbosity(self,verbosity):
+    def setVerbosity(self,verbosity):
 
-	self.verbosity=verbosity
+	       self.verbosity=verbosity
