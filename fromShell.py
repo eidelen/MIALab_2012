@@ -1,5 +1,9 @@
 #> ipython --pylab --deep-reload
 
+import numpy as np
+scores = np.loadtxt('../training/scores.txt')
+
+
 import dicom
 (reader, img) = dicom.open_image("../training/Case1.dcm")
 

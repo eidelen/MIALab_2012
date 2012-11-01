@@ -38,6 +38,8 @@ from IPython.core.display import Math
 # Todo: check img 14, 4
 
 class AgeDetermination:
+
+    verbosity = 0
     
     def detect_joints_of_interest(self, numpyImage ):
         
@@ -93,29 +95,31 @@ class AgeDetermination:
         #jointsArrays.append(pointingFingerJointsIdx)
         jointsArrays.append(daumenJointsIdx)
         
-        cropedJointsLittleFinger = self.crop_joint( xRay_without_background, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
-        cropedJointsMiddleFinger = self.crop_joint( xRay_without_background, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
-        cropedJointsDaumen = self.crop_joint( xRay_without_background, daumenFingerLine, daumenJointsIdx, joint_rect_size)
+        croppedJointsLittleFinger = self.crop_joint( xRay_without_background, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
+        croppedJointsMiddleFinger = self.crop_joint( xRay_without_background, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
+        croppedJointsDaumen = self.crop_joint( xRay_without_background, daumenFingerLine, daumenJointsIdx, joint_rect_size)
         
-        self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, joint_rect_size)
-        
-        plotCnt = 1
-        for i in range(0,len(cropedJointsLittleFinger)):
-            plt.subplot(3,3,plotCnt)
-            plt.imshow(cropedJointsLittleFinger[i], cmap=cm.Greys_r)
-            plotCnt = plotCnt + 1
-        for i in range(0,len(cropedJointsMiddleFinger)):
-            plt.subplot(3,3,plotCnt)
-            plt.imshow(cropedJointsMiddleFinger[i], cmap=cm.Greys_r)
-            plotCnt = plotCnt + 1
-        for i in range(0,len(cropedJointsDaumen)):
-            plt.subplot(3,3,plotCnt)
-            plt.imshow(cropedJointsDaumen[i], cmap=cm.Greys_r)
-            plotCnt = plotCnt + 1
+        if(self.verbosity > 0):
+		self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, joint_rect_size)
+		plotCnt = 1
+	        for i in range(0,len(croppedJointsLittleFinger)):
+	            plt.subplot(3,3,plotCnt)
+	            plt.imshow(croppedJointsLittleFinger[i], cmap=cm.Greys_r)
+	            plotCnt = plotCnt + 1
+	        for i in range(0,len(croppedJointsMiddleFinger)):
+	            plt.subplot(3,3,plotCnt)
+	            plt.imshow(croppedJointsMiddleFinger[i], cmap=cm.Greys_r)
+	            plotCnt = plotCnt + 1
+	        for i in range(0,len(croppedJointsDaumen)):
+	            plt.subplot(3,3,plotCnt)
+	            plt.imshow(croppedJointsDaumen[i], cmap=cm.Greys_r)
+	            plotCnt = plotCnt + 1
             
-        plt.show()
+        	plt.show()
             
-        return xRay_without_background
+        #return xRay_without_background
+	#return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
+	return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger, "thumb": croppedJointsDaumen }
          
         
     def get_hand_mask(self, numpyImage):
@@ -378,12 +382,13 @@ class AgeDetermination:
 
         dist_on_skel = new_distance * distance
         
-        plt.figure(figsize=(8, 4))
-        plt.subplot(121) 
-        plt.imshow(dist_on_skel, cmap=plt.cm.spectral, interpolation='nearest')
-        plt.contour(handmaskImage, [0.5], colors='w')
+        if(self.verbosity>0):
+		plt.figure(figsize=(8, 4))
+	        plt.subplot(121) 
+	        plt.imshow(dist_on_skel, cmap=plt.cm.spectral, interpolation='nearest')
+	        plt.contour(handmaskImage, [0.5], colors='w')
         
-        plt.show()
+	        plt.show()
         
         return True
     
@@ -552,10 +557,11 @@ class AgeDetermination:
         for pk in peaks:
             peakTable[ int(pk[0]) ] = pk[1] 
                     
-        plt.plot( intensities )
-        plt.plot( sumDiffArr )
-        plt.plot( peakTable )
-        plt.show()
+	if(self.verbosity>0):
+	        plt.plot( intensities )
+	        plt.plot( sumDiffArr )
+	        plt.plot( peakTable )
+	        plt.show()
             
         return peaks      
       
@@ -724,12 +730,6 @@ class AgeDetermination:
                     
         return skinMask
 
-    #def __init__(self):
-     
-    # Frank specific code :)    
-    #	(reader, img) = dicom.open_image('../data/Case1.dcm')	
-	# self.extract_Bones(img)
+def setVerbosity(self,verbosity):
 
-	
- 
-
+	self.verbosity=verbosity
