@@ -77,11 +77,11 @@ class AgeDetermination:
             plt.show()
             return 
         
-        ltFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(littleFingerLine, numpyImage), joint_windows_size )
+        ltFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(littleFingerLine, numpyImage), joint_windows_size, 3 )
         #ringFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(ringFingerLine, numpyImage), joint_windows_size )
-        middleFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(middleFingerLine, numpyImage) , joint_windows_size)
+        middleFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(middleFingerLine, numpyImage) , joint_windows_size, 3)
         #pointingFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(pointingFingerLine, numpyImage) , joint_windows_size)
-        daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage), joint_windows_size )
+        daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage), joint_windows_size, 2 )
         
         
         
@@ -488,10 +488,14 @@ class AgeDetermination:
         p1x = float(p1[1])
         p1y = float(p1[0])
         
-        a = (p1y-p0y)/(p1x-p0x)
+        deltaX = p1x-p0x
+        if abs(deltaX) < 0.0001: # in case deltaX is 0
+            deltaX = 0.0001
+        
+        a = (p1y-p0y)/deltaX
         b = p0y-(a*p0x)
         
-        for y in range(p1[0], p1[0] + centerCount/4*3): #continue line by 2/3 of original length
+        for y in range(p1[0], p1[0] + centerCount): #continue line by original length
             x = (y-b)/a
             currentCenters.append([y,x])
             
@@ -515,7 +519,7 @@ class AgeDetermination:
         
         return intensities
     
-    def find_joints_from_intensities(self, intensities, wSize ):
+    def find_joints_from_intensities(self, intensities, wSize, maxJoints ):
             
         nI = len(intensities)
         
@@ -553,17 +557,28 @@ class AgeDetermination:
         for pk in modPeaks:
             peaks.append([ pk[0]+wSizeHalf, pk[1] ])
        
+       
+        # filter peaks
         
-        nbrOfPeaks = len( peaks )    
-        if nbrOfPeaks > 3:
-            # remove first peak if too close to beginning
-            if peaks[0][0] < nI*0.05 :
+        # remove first peak if too close to beginning
+        if len(peaks) > 0 :
+            if peaks[0][0] < nI*0.08 :
                 peaks.remove(peaks[0])
-             
-            # just remove all peaks after the 3 first :))    
-            peaks = peaks[0:3]
-                                 
-           
+                
+        # remove peaks if too close together
+        minDist = nI*0.08
+        lastPeakPos = -100
+        for pk in peaks :
+            distToPrevious = pk[0] - lastPeakPos
+            if distToPrevious < minDist :
+                peaks.remove(pk)
+            else :
+                lastPeakPos = pk[0]
+          
+        # just remove all peaks more than maxJoints :))
+        if len(peaks) > maxJoints:  
+            peaks = peaks[0:maxJoints]
+                                          
         # uncomment if you want to see graphs 
         return peaks
         
@@ -665,8 +680,8 @@ class AgeDetermination:
                 plt.plot( coord[1], coord[0], ".b")
                                      
                 # get direction vect
-                p0V = np.array( [[ currentCenterLine[ arrIdx-5 ][1] ],[ currentCenterLine[ arrIdx-5 ][0] ]] )
-                p1V = np.array( [[ currentCenterLine[ arrIdx+5 ][1] ],[ currentCenterLine[ arrIdx+5 ][0] ]] )
+                p0V = np.array( [[ currentCenterLine[ arrIdx-10 ][1] ],[ currentCenterLine[ arrIdx-10 ][0] ]] )
+                p1V = np.array( [[ currentCenterLine[ arrIdx+10 ][1] ],[ currentCenterLine[ arrIdx+10 ][0] ]] )
                 dV = p1V - p0V 
                 rect = self.compute_rotated_rect( dV, coord, jRect )
                 
@@ -687,8 +702,8 @@ class AgeDetermination:
             yc = coord[0]
                                    
             # compute angle
-            p0V = np.array( [[ finger[ arrIdx-5 ][1] ],[ finger[ arrIdx-5 ][0] ]] )
-            p1V = np.array( [[ finger[ arrIdx+5 ][1] ],[ finger[ arrIdx+5 ][0] ]] )
+            p0V = np.array( [[ finger[ arrIdx-10 ][1] ],[ finger[ arrIdx-10 ][0] ]] )
+            p1V = np.array( [[ finger[ arrIdx+10 ][1] ],[ finger[ arrIdx+10 ][0] ]] )
             dV = p1V - p0V 
             refV = np.array( [[ 0.0 ],[ 1.0 ]] )
             angle = atan2( refV[0]*dV[1] - refV[1]*dV[0], refV[0]*dV[0] + refV[1]*dV[1] )
