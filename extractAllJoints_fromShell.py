@@ -11,36 +11,31 @@ aClass = AgeDetermination()
 
 directory = '../extractedJoints'
 if not os.path.exists(directory):
-    os.makedirs(directory)
+	os.makedirs(directory)
+	
+#Add numbers of the working studies here:	
+okImg=[1,3,10,23,28,29,30];
 
-for i in range(21,len(scores)-1):
-	if(i+1==4 or i+1==7 or i+1 ==12 or i+1==21 or i+1==22 or i+1==27 or i+1==31):
-		# for all datasets that make the program fail (Aedu, fix if you have time)
-		continue
+for i in okImg:
 
-	(reader, img) = dicom.open_image("../training/Case" + str(i+1) + ".dcm")
+	(reader, img) = dicom.open_image("../training/Case" + str(i) + ".dcm")
 	joints = aClass.detect_joints_of_interest(img)
 	
 	if(len(joints)==3):
 		if(len(joints['littleFinger'])==3):
 			jointNum=1
 			for joint in joints['littleFinger']:
-				imsave(directory + '/' + str(i+1) + "_lf_" + str(jointNum) + ".png", joint)
+				imsave(directory + '/' + str(i) + "_lf_" + str(jointNum) + ".png", joint)
 				jointNum = jointNum+1
-
+				
 		if(len(joints['middleFinger'])==3):
-                        jointNum=1
-                        for joint in joints['middleFinger']:
-                                imsave(directory + '/' + str(i+1) + "_mf_" + str(jointNum) + ".png", joint)
+			jointNum = 1
+			for joint in joints['middleFinger']:
+				imsave(directory + '/' + str(i) + "_mf_" + str(jointNum) + ".png", joint)
 				jointNum = jointNum+1
 
-		if(len(joints['thumb'])==3):
-                        jointNum=1
-                        for joint in joints['thumb']:
-                                imsave(directory + '/' + str(i+1) + "_th_" + str(jointNum) + ".png", joint)
+		if(len(joints['thumb'])==2):
+			jointNum=1
+			for joint in joints['thumb']:
+				imsave(directory + '/' + str(i) + "_th_" + str(jointNum) + ".png", joint)
 				jointNum = jointNum+1
-
-		
-
-
-
