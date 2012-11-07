@@ -125,7 +125,6 @@ class AgeDetermination:
     #return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
         return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger, "thumb": croppedJointsDaumen }
          
-        
     def get_hand_mask(self, numpyImage):
         # Adi
         success = False
@@ -162,7 +161,6 @@ class AgeDetermination:
         treshMask = (labeled == idx_of_biggest_label)
         
         return success, treshMask
-    
     
     def remove_background(self, xRay, maskedBG ):
         return xRay * maskedBG;
@@ -446,7 +444,6 @@ class AgeDetermination:
                      
         return currentCenters     
                     
-    
     def get_closest_lower_and_upper_true_idx( self, array1D, targetIdx ):
         arrSh = array1D.shape
         lowIdx = 0
