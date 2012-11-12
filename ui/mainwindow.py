@@ -7,6 +7,7 @@ Module implementing MainWindow.
 from PyQt4.Qt import *
 from PyQt4.QtGui import *
 from PyQt4.QtCore import pyqtSignature
+from PyQt4.QtGui import QApplication, QCursor
 
 from qimage2ndarray import *
 
@@ -38,6 +39,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         QMainWindow.__init__(self, parent)
         self.setupUi(self)
+        self.dectectJointsButton.enabledChange(False)
+        self.rateJointsButton.enabledChange(False)
     
     @pyqtSignature("")
     def on_LoadXray_released(self):
@@ -49,19 +52,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.mOrignialXRayImage = img
         
         self.display_image( self.mOrignialXRayImage )
+        self.dectectJointsButton.enabledChange(True)
         
     
     @pyqtSignature("")
     def on_dectectJointsButton_released(self):
+        
         #boneBinaryImage = age_determination.extract_Bones( self.mOrignialXRayImage )
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
         aClass = AgeDetermination()
         aClass.setVerbosity( True ) 
         self.mDetectedJoints=aClass.detect_joints_of_interest( self.mOrignialXRayImage )
         #self.display_image( joint_marked_image )
-    
+        QApplication.restoreOverrideCursor()
+        self.rateJointsButton.enabledChange(True)
+        
     @pyqtSignature("")
     def on_rateJointsButton_released(self):
-
+        QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
         if (self.mDetectedJoints!=None):
             scoreTable = np.loadtxt('../training/scores.txt')
             aClass = AgeDetermination()
@@ -70,6 +78,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             print "----- FINAL Score is " + str(rateSum) +"! ------"
         else:
             print "Detect joints first!"
+        QApplication.restoreOverrideCursor()
     
     def display_image(self, pilImage ):
         scene = QGraphicsScene()
