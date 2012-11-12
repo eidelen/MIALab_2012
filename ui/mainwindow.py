@@ -30,6 +30,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     Class documentation goes here.
     """
     mOrignialXRayImage = Image.new("L", (50, 30)) # dummy image
+    mDetectedJoints=None
     
     def __init__(self, parent = None):
         """
@@ -55,18 +56,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #boneBinaryImage = age_determination.extract_Bones( self.mOrignialXRayImage )
         aClass = AgeDetermination()
         aClass.setVerbosity( True ) 
-        aClass.detect_joints_of_interest( self.mOrignialXRayImage )
+        self.mDetectedJoints=aClass.detect_joints_of_interest( self.mOrignialXRayImage )
         #self.display_image( joint_marked_image )
     
     @pyqtSignature("")
     def on_rateJointsButton_released(self):
-        """
-        Slot documentation goes here.
-        """
-        # TODO: not implemented yet
-        raise NotImplementedError
-    
-    
+
+        if (self.mDetectedJoints!=None):
+            scoreTable = np.loadtxt('../training/scores.txt')
+            aClass = AgeDetermination()
+            aClass.setVerbosity( True ) 
+            rateSum=aClass.rate_joints(self.mDetectedJoints,scoreTable)
+            print "----- FINAL Score is " + str(rateSum) +"! ------"
+        else:
+            print "Detect joints first!"
     
     def display_image(self, pilImage ):
         scene = QGraphicsScene()
