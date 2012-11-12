@@ -15,33 +15,48 @@ if not os.path.exists(directory):
 	os.makedirs(directory)
 	
 #Add numbers of the working studies here:	
-okImg=[1,3,10,23,28,29,30];
+okImg=[1,3,10,23,28,29,30]
 
-size=140*30,140
+evaluatedFingers = ['littleFinger','middleFinger','thumb']
 
-imgLF1=Image.new('L',size)
-imgLF2=Image.new('L',size)
-imgLF3=Image.new('L',size)
+size=140*33,140
 
-imagesLF=list()
-imagesLF.append(imgLF1)
-imagesLF.append(imgLF2)
-imagesLF.append(imgLF3)
+fingerImagesPool=dict()
+
+for finger in evaluatedFingers:
+	images=list()
+	fingerImagesPool[finger]=images
+	
+	imgLF1=Image.new('L',size)
+	images.append(imgLF1)
+	
+	imgLF2=Image.new('L',size)
+	images.append(imgLF2)
+	
+	if (images!='thumb'):
+		imgLF3=Image.new('L',size)
+		images.append(imgLF3)
 
 for i in okImg:
-
+	
 	(reader, img) = dicom.open_image("../training/Case" + str(i) + ".dcm")
+		
 	joints = aClass.detect_joints_of_interest(img)
 	
-	if(len(joints)==3):
-		if(len(joints['littleFinger'])==3):
-			jointNum=1
-			for joint in joints['littleFinger']:
-				#imagesLF[jointNum-1].paste(Image.fromarray((255.0*255.0/joint.max()*(joint-joint.min())).astype(np.uint16)),((i-1)*140,0))
-				imagesLF[jointNum-1].paste(Image.fromarray((255.0/joint.max()*(joint-joint.min())).astype(np.uint8)),((i-1)*140,0))
-				#imagesLF[jointNum-1].paste(Image.fromarray(joint,'L'),((i-1)*140,0))
-				jointNum = jointNum+1
-jointNum=1
-for img in imagesLF:
-	img.save(directory+"/LittleFinger" + str(jointNum) + ".png")
-	jointNum=jointNum+1
+	for fingerName in evaluatedFingers:
+				
+		if(len(joints)==3):
+			if(len(joints[fingerName])>=2):
+				jointNum=1
+				for joint in joints[fingerName]:
+					#imagesLF[jointNum-1].paste(Image.fromarray((255.0*255.0/joint.max()*(joint-joint.min())).astype(np.uint16)),((i-1)*140,0))
+					fingerImagesPool[fingerName][jointNum-1].paste(Image.fromarray((255.0/joint.max()*(joint-joint.min())).astype(np.uint8)),((i-1)*140,0))
+					#imagesLF[jointNum-1].paste(Image.fromarray(joint,'L'),((i-1)*140,0))
+					jointNum = jointNum+1
+
+#write down images
+for finger in fingerImagesPool:
+	jointNum=1
+	for img in fingerImagesPool[finger]:
+		img.save(directory+"/" + finger + str(jointNum) + ".png")
+		jointNum=jointNum+1
