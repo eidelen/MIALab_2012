@@ -19,6 +19,7 @@ import dicom
 from skimage import measure
 from skimage import filter
 from skimage import data
+from skimage import feature
 from skimage.filter import *
 from skimage.morphology import label, closing, square, skeletonize, medial_axis
 from skimage.measure import regionprops
@@ -124,7 +125,71 @@ class AgeDetermination:
         #return xRay_without_background
     #return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
         return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger, "thumb": croppedJointsDaumen }
-         
+    
+    def rate_joints(self, joints, scoreTable):
+        
+        #final score to sum up
+        score=0
+        
+        #Name the fingers, which should be treated here ['littleFinger', 'middelFinger','thumb']
+        
+        evaluatedFingers = ['littleFinger','middleFinger','thumb']
+        
+        for fingerName in evaluatedFingers:
+
+            #little Finger
+            if (fingerName=='thumb'):
+                totalJoints=2
+            else:
+                totalJoints=3
+                
+            if(len(joints[fingerName])==totalJoints):         #correct num of joints detected?
+                jointNum=1
+                for joint in joints[fingerName]:    #loop through all joints 
+                    template=Image.fromarray((255.0/joint.max()*(joint-joint.min())).astype(np.uint8))
+                    score+=self.get_score_per_template(fingerName,jointNum,template,scoreTable)
+                    jointNum+=1
+            
+        
+        return score
+    
+    def get_score_per_template(self,fingerString, jointNr, jointImage, scoreTable):
+        
+        template=jointImage
+        target=np.asarray(Image.open('../extractedJoints/'+ fingerString + str(jointNr)+'.png'))      #load the training-joints for the actual finger/joint
+        
+        box=(50, 20, 80, 120)                   #this is crucial
+        boxedTemplate=template.crop(box)        #crop the template
+        boxedTemplate=np.asarray(boxedTemplate)
+        
+        #plt.imshow(boxedTemplate,cmap=plt.cm.gray)
+        #plt.show()
+        
+        #do template matching
+        match=feature.match_template(target,boxedTemplate, pad_input=True)
+        
+        #search max respond
+        ij = np.unravel_index(np.argmax(match), match.shape)
+        x, y = ij[::-1]
+        
+        #convert to study-nr
+        trainingStudyNr = x/140+1
+        
+        print 'Hit template from study Nr. ' + str(trainingStudyNr)
+        
+        idxArray={'littleFinger':[15,12,10],'middleFinger':[14,11,9],'thumb':[13,8]}
+        
+        #extract score from provided score-study table
+        idx=idxArray[fingerString][jointNr-1]
+        print 'index for score file:' + str(idx)
+        
+        if (idx>0):    
+            score=scoreTable[trainingStudyNr-1][idx]
+            print 'Score for joint ' + str(jointNr) + ' in ' + fingerString + ' is ' + str(score) 
+            return score
+        
+        return False
+
     def get_hand_mask(self, numpyImage):
         # Adi
         success = False
@@ -385,12 +450,12 @@ class AgeDetermination:
         dist_on_skel = new_distance * distance
         
         if(self.verbosity>0):
-		plt.figure(figsize=(8, 4))
-	        plt.subplot(121) 
-	        plt.imshow(dist_on_skel, cmap=plt.cm.spectral, interpolation='nearest')
-	        plt.contour(handmaskImage, [0.5], colors='w')
+            plt.figure(figsize=(8, 4))
+            plt.subplot(121) 
+            plt.imshow(dist_on_skel, cmap=plt.cm.spectral, interpolation='nearest')
+            plt.contour(handmaskImage, [0.5], colors='w')
         
-	        plt.show()
+            plt.show()
         
         return True
     
