@@ -137,7 +137,7 @@ class AgeDetermination:
         
         for fingerName in evaluatedFingers:
 
-            #little Finger
+            #thumb has only 2 joints
             if (fingerName=='thumb'):
                 totalJoints=2
             else:
@@ -150,13 +150,12 @@ class AgeDetermination:
                     score+=self.get_score_per_template(fingerName,jointNum,template,scoreTable)
                     jointNum+=1
             
-        
         return score
     
     def get_score_per_template(self,fingerString, jointNr, jointImage, scoreTable):
         
         template=jointImage
-        target=np.asarray(Image.open('../extractedJoints/'+ fingerString + str(jointNr)+'.png'))      #load the training-joints for the actual finger/joint
+        target=np.asarray(Image.open('extractedJoints/'+ fingerString + str(jointNr)+'.png'))      #load the training-joints for the actual finger/joint
         
         box=(50, 20, 80, 120)                   #this is crucial
         boxedTemplate=template.crop(box)        #crop the template
@@ -175,17 +174,19 @@ class AgeDetermination:
         #convert to study-nr
         trainingStudyNr = x/140+1
         
-        print 'Hit template from study Nr. ' + str(trainingStudyNr)
+        print 'Hit template from study nr. ' + str(trainingStudyNr)
         
+        #Indices for Cattin's magic score.txt file to fit our joint-numbering.
         idxArray={'littleFinger':[15,12,10],'middleFinger':[14,11,9],'thumb':[13,8]}
         
-        #extract score from provided score-study table
+        #extract score from provided score vs. study table
         idx=idxArray[fingerString][jointNr-1]
         print 'index for score file:' + str(idx)
         
         if (idx>0):    
             score=scoreTable[trainingStudyNr-1][idx]
             print 'Score for joint ' + str(jointNr) + ' in ' + fingerString + ' is ' + str(score) 
+            
             return score
         
         return False
