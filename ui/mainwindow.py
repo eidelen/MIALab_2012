@@ -71,11 +71,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_rateJointsButton_released(self):
         QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
         if (self.mDetectedJoints!=None):
-            scoreTable = np.loadtxt('../training/scores.txt')
+            scoreTable = np.loadtxt('scores/scores.txt')
             aClass = AgeDetermination()
             aClass.setVerbosity( True ) 
-            rateSum=aClass.rate_joints(self.mDetectedJoints,scoreTable)
-            print "----- FINAL Score is " + str(rateSum) +"! ------"
+            [rateSum, okRatings]=aClass.rate_joints(self.mDetectedJoints,scoreTable)
+            print "----- FINAL Score is " + str(rateSum) +" with " + str(okRatings)+" found ratings! ------"
         else:
             print "Detect joints first!"
         QApplication.restoreOverrideCursor()

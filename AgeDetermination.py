@@ -131,8 +131,10 @@ class AgeDetermination:
         #final score to sum up
         score=0
         
-        #Name the fingers, which should be treated here ['littleFinger', 'middelFinger','thumb']
+        #count the number of joints, where we found a rating
+        okRatings = 0  
         
+        #Name the fingers, which should be treated here ['littleFinger', 'middelFinger','thumb']
         evaluatedFingers = ['littleFinger','middleFinger','thumb']
         
         for fingerName in evaluatedFingers:
@@ -142,17 +144,43 @@ class AgeDetermination:
                 totalJoints=2
             else:
                 totalJoints=3
-                
+            
             if(len(joints[fingerName])==totalJoints):         #correct num of joints detected?
                 jointNum=1
                 for joint in joints[fingerName]:    #loop through all joints 
                     template=Image.fromarray((255.0/joint.max()*(joint-joint.min())).astype(np.uint8))
-                    score+=self.get_score_per_template(fingerName,jointNum,template,scoreTable)
+                    newScore=self.get_score_per_template(fingerName,jointNum,template,scoreTable)
+                    
+                    if (newScore!=False):
+                        score+=newScore
+                        okRatings+=1
+                    
                     jointNum+=1
-            
-        return score
+                        
+        return score, okRatings
     
     def get_score_per_template(self,fingerString, jointNr, jointImage, scoreTable):
+        
+        trainingStudyNr = self.find_matching_study_nr_per_template_matching(fingerString, jointNr, jointImage)  
+        
+        print 'Hit template from study nr. ' + str(trainingStudyNr)
+        
+        #Indices for Cattin's magic score.txt file to fit our joint-numbering.
+        idxArray={'littleFinger':[15,12,10],'middleFinger':[14,11,9],'thumb':[13,8]}
+        
+        #extract score from provided score vs. study table
+        idx=idxArray[fingerString][jointNr-1]
+        #print 'index for score file:' + str(idx)
+        
+        if (idx>0):    
+            score=scoreTable[trainingStudyNr-1][idx]
+            print 'Score for joint ' + str(jointNr) + ' in ' + fingerString + ' is ' + str(score) 
+            
+            return score
+        
+        return False
+    
+    def find_matching_study_nr_per_template_matching(self, fingerString, jointNr, jointImage):
         
         template=jointImage
         target=np.asarray(Image.open('extractedJoints/'+ fingerString + str(jointNr)+'.png'))      #load the training-joints for the actual finger/joint
@@ -174,23 +202,8 @@ class AgeDetermination:
         #convert to study-nr
         trainingStudyNr = x/140+1
         
-        print 'Hit template from study nr. ' + str(trainingStudyNr)
+        return trainingStudyNr
         
-        #Indices for Cattin's magic score.txt file to fit our joint-numbering.
-        idxArray={'littleFinger':[15,12,10],'middleFinger':[14,11,9],'thumb':[13,8]}
-        
-        #extract score from provided score vs. study table
-        idx=idxArray[fingerString][jointNr-1]
-        print 'index for score file:' + str(idx)
-        
-        if (idx>0):    
-            score=scoreTable[trainingStudyNr-1][idx]
-            print 'Score for joint ' + str(jointNr) + ' in ' + fingerString + ' is ' + str(score) 
-            
-            return score
-        
-        return False
-
     def get_hand_mask(self, numpyImage):
         # Adi
         success = False
