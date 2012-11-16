@@ -25,17 +25,17 @@ for i in okImg:
 		if(len(joints['littleFinger'])==3):
 			jointNum=1
 			for joint in joints['littleFinger']:
-				imsave(directory + '/' + str(i) + "_lf_" + str(jointNum) + ".png", joint)
+				imsave(directory + '/' + str(i) + "_littleFinger_" + str(jointNum) + ".png", joint)
 				jointNum = jointNum+1
 				
 		if(len(joints['middleFinger'])==3):
 			jointNum = 1
 			for joint in joints['middleFinger']:
-				imsave(directory + '/' + str(i) + "_mf_" + str(jointNum) + ".png", joint)
+				imsave(directory + '/' + str(i) + "_middleFinger_" + str(jointNum) + ".png", joint)
 				jointNum = jointNum+1
 
 		if(len(joints['thumb'])==2):
 			jointNum=1
 			for joint in joints['thumb']:
-				imsave(directory + '/' + str(i) + "_th_" + str(jointNum) + ".png", joint)
+				imsave(directory + '/' + str(i) + "_thumb_" + str(jointNum) + ".png", joint)
 				jointNum = jointNum+1

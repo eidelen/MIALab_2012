@@ -34,7 +34,12 @@ import scipy
 from numpy.lib.scimath import sqrt
 from IPython.core.display import Math
 
+import glob
+import re
+import os
 
+from classify import masterClassifier
+from classify.templateMatchingClassifier import *
 
 # Todo: check img 14, 4
 
@@ -126,7 +131,20 @@ class AgeDetermination:
     #return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
         return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger, "thumb": croppedJointsDaumen }
     
+    
     def rate_joints(self, joints, scoreTable):
+        
+        # instanciate the master classifier
+        classifier = masterClassifier(scoreTable)
+        
+        # add a template matching classifier
+        tmClassifier = templateMatchingClassifier()
+        
+        classifier.registerClassifier(tmClassifier)
+        
+        return classifier.classifyHand(joints)
+        
+    def rate_joints_wale(self, joints, scoreTable):
         
         #final score to sum up
         score=0

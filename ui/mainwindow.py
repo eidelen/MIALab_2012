@@ -74,8 +74,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             scoreTable = np.loadtxt('scores/scores.txt')
             aClass = AgeDetermination()
             aClass.setVerbosity( True ) 
-            [rateSum, okRatings]=aClass.rate_joints(self.mDetectedJoints,scoreTable)
-            print "----- FINAL Score is " + str(rateSum) +" with " + str(okRatings)+" found ratings! ------"
+            #[rateSum, okRatings]=aClass.rate_joints(self.mDetectedJoints,scoreTable)
+            #print "----- FINAL Score is " + str(rateSum) +" with " + str(okRatings)+" found ratings! ------"
+            print "Final prediction: " + str(aClass.rate_joints(self.mDetectedJoints,scoreTable))
         else:
             print "Detect joints first!"
         QApplication.restoreOverrideCursor()
