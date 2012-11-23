@@ -38,6 +38,8 @@ import glob
 import re
 import os
 
+import cv2
+
 from classify import masterClassifier
 from classify.templateMatchingClassifier import *
 
@@ -58,10 +60,12 @@ class AgeDetermination:
         imgH, imgW = numpyImage.shape
         numpyImage = numpyImage[0:(imgH-100),:]
         imgH, imgW = numpyImage.shape
-        
+
+        # first resize the image to the same size
+        numpyImage = self.resize_image(numpyImage)
+                
         #numpyImage = median_filter(numpyImage, radius=2, mask=None, percent=50)
-        
-        
+
         success, handmask = self.get_hand_mask(numpyImage)
         if not success :
             print "Background Segmentation failed"
@@ -131,7 +135,22 @@ class AgeDetermination:
     #return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
         return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger, "thumb": croppedJointsDaumen }
     
+    def resize_image(self, image):
+        
+        minwidth = 692; # the minimum width of all images in the training set, determined using normalizeHandplateImages.py
+        
+        # size is hardcoded, ugly
+        newHeight = int(float(minwidth)/(float(image.shape[1]))*image.shape[0])
+        #resized = imresize(img,(newHeight, minwidth))
+        #resized = np.asarray(resized)
+        img = np.asarray(image,dtype=np.float32)
     
+        #img_small = cv2.resize(img, (newHeight, minwidth))
+        image_small = cv2.resize(img, (minwidth, newHeight))
+        
+        return image_small
+    
+        
     def rate_joints(self, joints, scoreTable):
         
         # instanciate the master classifier
