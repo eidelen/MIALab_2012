@@ -56,8 +56,8 @@ class FingertipFinder:
             xcoos.append(x)
             ycoos.append(y)
             
-        plt.imshow(result_tmp)
-        plt.show()
+        #plt.imshow(result_tmp)
+        #plt.show()
         
         # fire up the solver to find the best solution
         variables = ('little','ring','middle','pointer')
@@ -112,13 +112,13 @@ class FingertipFinder:
         
 #        for solution in solutions:
 #            fig, (ax1, ax2, ax3) = plt.subplots(ncols=3, figsize=(8, 3))
-#            ax1.imshow(patch)
+#            ax1.imshow(self.patch)
 #            ax1.set_axis_off()
 #            ax1.set_title('template')
-#            ax2.imshow(img)
+#            ax2.imshow(result)
 #            ax2.set_axis_off()
 #            ax2.set_title('image')
-#            ax3.imshow(result)
+#            ax3.imshow(image)
 #            ax3.set_axis_off()
 #            ax3.set_title('`match_template`\nresult')
 #            # highlight matched region
@@ -130,5 +130,10 @@ class FingertipFinder:
 #            ax3.plot(solution['pointer'][0], solution['pointer'][1], 'o', markeredgecolor='r', markerfacecolor='y', markersize=10)
 #        
 #            plt.show()
-                        
-        return solutions[0]
+            
+        if len(solutions) > 0 :
+            return True, solutions[0]
+        else :
+           return False, []
+        
+

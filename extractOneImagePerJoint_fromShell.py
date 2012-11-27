@@ -41,14 +41,14 @@ for i in okImg:
 	
 	(reader, img) = dicom.open_image("../training/Case" + str(i) + ".dcm")
 		
-	joints = aClass.detect_joints_of_interest(img)
+	fingers = aClass.detect_joints_of_interest(img)
 	
 	for fingerName in evaluatedFingers:
 				
-		if(len(joints)==3):
-			if(len(joints[fingerName])>=2):
+		if(len(fingers)==3):
+			if(len(fingers[fingerName])>=2):
 				jointNum=1
-				for joint in joints[fingerName]:
+				for joint in fingers[fingerName]:
 					#imagesLF[jointNum-1].paste(Image.fromarray((255.0*255.0/joint.max()*(joint-joint.min())).astype(np.uint16)),((i-1)*140,0))
 					fingerImagesPool[fingerName][jointNum-1].paste(Image.fromarray((255.0/joint.max()*(joint-joint.min())).astype(np.uint8)),((i-1)*140,0))
 					#imagesLF[jointNum-1].paste(Image.fromarray(joint,'L'),((i-1)*140,0))

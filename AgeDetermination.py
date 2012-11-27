@@ -16,6 +16,8 @@ from scipy.ndimage.filters import gaussian_filter
 from scipy.ndimage.measurements import *
 import dicom
 
+from FingertipFinder import FingertipFinder
+
 from skimage import measure
 from skimage import filter
 from skimage import data
@@ -52,8 +54,8 @@ class AgeDetermination:
     def detect_joints_of_interest(self, numpyImage ):
         
         # settings
-        joint_windows_size = 60
-        joint_rect_size = 140
+        joint_windows_size = 40
+        joint_rect_size = 100
 
         
         # cut lower part of the image by 100
@@ -66,32 +68,33 @@ class AgeDetermination:
                 
         #numpyImage = median_filter(numpyImage, radius=2, mask=None, percent=50)
 
-        success, handmask = self.get_hand_mask(numpyImage)
-        if not success :
-            print "Background Segmentation failed"
-            plt.imshow(handmask)
-            plt.show()
-            return 
+        #success, handmask = self.get_hand_mask(numpyImage)
+        #if not success :
+        #    print "Background Segmentation failed"
+        #    plt.imshow(handmask)
+        #    plt.show()
+        #    return 
         
-        xRay_without_background = self.remove_background(numpyImage, handmask)
+        #xRay_without_background = self.remove_background(numpyImage, handmask)
 
         #skinMask = self.remove_skin(xRay_without_background, handmask)
         #plt.imshow(skinMask, cmap=cm.Greys_r)
         #plt.show()     
         
     
-        success, littleFingerLine, ringFingerLine, middleFingerLine, pointingFingerLine, daumenFingerLine = self.get_fingers_of_interest( handmask )
+        #success, littleFingerLine, ringFingerLine, middleFingerLine, pointingFingerLine, daumenFingerLine = self.get_fingers_of_interest( handmask )
+        success, littleFingerLine, ringFingerLine, middleFingerLine, pointingFingerLine = self.get_fingers_of_interest_franky_approach( numpyImage )
+        
         if not success :
             print "Finger Detection Failed"
-            plt.imshow(handmask)
-            plt.show()
-            return 
+            return { "littleFinger": [], "middleFinger": [] }
+        
         
         ltFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(littleFingerLine, numpyImage), joint_windows_size, 3 )
         #ringFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(ringFingerLine, numpyImage), joint_windows_size )
         middleFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(middleFingerLine, numpyImage) , joint_windows_size, 3)
         #pointingFingerJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(pointingFingerLine, numpyImage) , joint_windows_size)
-        daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage), joint_windows_size, 2 )
+        #daumenJointsIdx = self.find_joints_from_intensities( self.read_intensities_of_point_set(daumenFingerLine, numpyImage), joint_windows_size, 2 )
         
         
         
@@ -100,40 +103,40 @@ class AgeDetermination:
         #fingerLineArrays.append(ringFingerLine)
         fingerLineArrays.append(middleFingerLine)
         #fingerLineArrays.append(pointingFingerLine)
-        fingerLineArrays.append(daumenFingerLine)
+        #fingerLineArrays.append(daumenFingerLine)
         
         jointsArrays = []
         jointsArrays.append(ltFingerJointsIdx)
         #jointsArrays.append(ringFingerJointsIdx)
         jointsArrays.append(middleFingerJointsIdx)
         #jointsArrays.append(pointingFingerJointsIdx)
-        jointsArrays.append(daumenJointsIdx)
+        #jointsArrays.append(daumenJointsIdx)
         
-        croppedJointsLittleFinger = self.crop_joint( xRay_without_background, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
-        croppedJointsMiddleFinger = self.crop_joint( xRay_without_background, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
-        croppedJointsDaumen = self.crop_joint( xRay_without_background, daumenFingerLine, daumenJointsIdx, joint_rect_size)
+        croppedJointsLittleFinger = self.crop_joint( numpyImage, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
+        croppedJointsMiddleFinger = self.crop_joint( numpyImage, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
+        #croppedJointsDaumen = self.crop_joint( xRay_without_background, daumenFingerLine, daumenJointsIdx, joint_rect_size)
 
         if(self.verbosity > 0):
-            self.draw_joints_to_img(xRay_without_background, fingerLineArrays, jointsArrays, joint_rect_size)
+            self.draw_joints_to_img(numpyImage, fingerLineArrays, jointsArrays, joint_rect_size)
             plotCnt = 1
             for i in range(0,len(croppedJointsLittleFinger)):
-                plt.subplot(3,3,plotCnt)
+                plt.subplot(2,3,plotCnt)
                 plt.imshow(croppedJointsLittleFinger[i], cmap=cm.Greys_r)
                 plotCnt = plotCnt + 1
             for i in range(0,len(croppedJointsMiddleFinger)):
-                plt.subplot(3,3,plotCnt)
+                plt.subplot(2,3,plotCnt)
                 plt.imshow(croppedJointsMiddleFinger[i], cmap=cm.Greys_r)
                 plotCnt = plotCnt + 1
-            for i in range(0,len(croppedJointsDaumen)):
-                plt.subplot(3,3,plotCnt)
-                plt.imshow(croppedJointsDaumen[i], cmap=cm.Greys_r)
-                plotCnt = plotCnt + 1
+            #for i in range(0,len(croppedJointsDaumen)):
+            #    plt.subplot(3,3,plotCnt)
+            #    plt.imshow(croppedJointsDaumen[i], cmap=cm.Greys_r)
+            #    plotCnt = plotCnt + 1
             
             plt.show()
             
         #return xRay_without_background
     #return croppedJointsLittleFinger, croppedJointsMiddleFinger, croppedJointsDaumen
-        return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger, "thumb": croppedJointsDaumen }
+        return { "littleFinger": croppedJointsLittleFinger, "middleFinger": croppedJointsMiddleFinger }
     
     def resize_image(self, image):
         
@@ -151,7 +154,7 @@ class AgeDetermination:
         return image_small
     
         
-    def rate_joints(self, joints, scoreTable):
+    def rate_joints(self, fingers, scoreTable):
         
         # instanciate the master classifier
         classifier = masterClassifier(scoreTable)
@@ -161,14 +164,14 @@ class AgeDetermination:
         
         classifier.registerClassifier(tmClassifier)
         
-        return classifier.classifyHand(joints)
+        return classifier.classifyHand(fingers)
         
-    def rate_joints_wale(self, joints, scoreTable):
+    def rate_joints_wale(self, fingers, scoreTable):
         
         #final score to sum up
         score=0
         
-        #count the number of joints, where we found a rating
+        #count the number of fingers, where we found a rating
         okRatings = 0  
         
         #Name the fingers, which should be treated here ['littleFinger', 'middelFinger','thumb']
@@ -176,15 +179,15 @@ class AgeDetermination:
         
         for fingerName in evaluatedFingers:
 
-            #thumb has only 2 joints
+            #thumb has only 2 fingers
             if (fingerName=='thumb'):
                 totalJoints=2
             else:
                 totalJoints=3
             
-            if(len(joints[fingerName])==totalJoints):         #correct num of joints detected?
+            if(len(fingers[fingerName])==totalJoints):         #correct num of fingers detected?
                 jointNum=1
-                for joint in joints[fingerName]:    #loop through all joints 
+                for joint in fingers[fingerName]:    #loop through all fingers 
                     template=Image.fromarray((255.0/joint.max()*(joint-joint.min())).astype(np.uint8))
                     newScore=self.get_score_per_template(fingerName,jointNum,template,scoreTable)
                     
@@ -220,7 +223,7 @@ class AgeDetermination:
     def find_matching_study_nr_per_template_matching(self, fingerString, jointNr, jointImage):
         
         template=jointImage
-        target=np.asarray(Image.open('extractedJoints/'+ fingerString + str(jointNr)+'.png'))      #load the training-joints for the actual finger/joint
+        target=np.asarray(Image.open('extractedJoints/'+ fingerString + str(jointNr)+'.png'))      #load the training-fingers for the actual finger/joint
         
         box=(50, 20, 80, 120)                   #this is crucial
         boxedTemplate=template.crop(box)        #crop the template
@@ -280,6 +283,38 @@ class AgeDetermination:
     
     def remove_background(self, xRay, maskedBG ):
         return xRay * maskedBG;
+    
+    def get_fingers_of_interest_franky_approach(self, image ):
+        finder = FingertipFinder()
+        success, fingers = finder.findFingertips( image )
+        if not success :
+            print "FingertipFinder Failed"
+            return False, [], [], [], [] 
+        
+        
+        startLittle = fingers['little'];
+        startRing = fingers['ring'];
+        startMiddle = fingers['middle'];
+        startPoint = fingers['pointer'];
+        
+        #switch x-y to y-x
+        startLittle = [ startLittle[1], startLittle[0] ]
+        startRing = [ startRing[1], startRing[0] ]
+        startMiddle = [ startMiddle[1], startMiddle[0] ]
+        startPoint = [ startPoint[1], startPoint[0] ]
+                        
+        littleLine = self.continue_central_line_franky_method( image, startLittle )
+        RingLine = self.continue_central_line_franky_method( image, startRing )
+        middleLine = self.continue_central_line_franky_method( image, startMiddle )
+        pointLine = self.continue_central_line_franky_method( image, startPoint )
+        
+        littleLine = self.interpolate_central_lines(littleLine)
+        RingLine = self.interpolate_central_lines(RingLine)
+        middleLine = self.interpolate_central_lines(middleLine)
+        pointLine = self.interpolate_central_lines(pointLine)
+        
+        return True, littleLine, RingLine, middleLine, pointLine
+        
         
     def get_fingers_of_interest(self, handmaskImage ):
         
@@ -580,6 +615,7 @@ class AgeDetermination:
         
         return lowIdx, upIdx
      
+     
     def interpolate_central_lines(self, currentCenters):
         
         if len(currentCenters) == 0:
@@ -613,6 +649,85 @@ class AgeDetermination:
             currentCenters.append([y,x])
             
         return currentCenters
+       
+    def continue_central_line_franky_method(self, image, initialCenter ):
+        
+        if len(initialCenter) == 0:
+            print "continue_central_line invalid argument"
+            return []
+        
+        currentCenters = []
+        currentCenters.append( initialCenter )
+        
+        smoothed = median_filter(image, radius=2, mask=None, percent=50)
+        h, w = smoothed.shape
+        
+        # compute initial background value
+        backgroundLine = smoothed[ initialCenter[0] , range( initialCenter[1], initialCenter[1]+100 ) ]
+        minValueOnLine = min( backgroundLine )
+        avgValueOnLine = mean(backgroundLine )
+        backgroundBorderVal = (minValueOnLine + avgValueOnLine)/2       
+        
+        # growing downwards
+        leftIdx, rightIdx = self.get_left_and_right_border( image[ initialCenter[0] , :], initialCenter[1] , backgroundBorderVal )  
+        firstThickness = rightIdx - leftIdx
+        lastCenter = (rightIdx + leftIdx)/2   
+        minThickness = firstThickness * 0.5
+        maxThickness = firstThickness * 2.0
+        
+        for i in range( initialCenter[0] , h) :
+            leftIdx, rightIdx = self.get_left_and_right_border( image[ i , :], lastCenter , backgroundBorderVal )  
+            
+            center = (rightIdx + leftIdx)/2   
+            diffCenter = center - lastCenter
+            currentThickness = rightIdx - leftIdx
+            
+            if np.sqrt(diffCenter*diffCenter) > 5 or currentThickness < minThickness or currentThickness > maxThickness: # stop the process when thickness difference becomes to big
+                break
+            
+            lastCenter = center
+            currentCenters.append( [i, center] )
+            
+        # growing upwards
+        leftIdx, rightIdx = self.get_left_and_right_border( image[ initialCenter[0] , :], initialCenter[1] , backgroundBorderVal )  
+        lastCenter = (rightIdx + leftIdx)/2   
+        
+        
+        for i in range( initialCenter[0] , 0, -1) :
+            leftIdx, rightIdx = self.get_left_and_right_border( image[ i , :], lastCenter , backgroundBorderVal )  
+            
+            center = (rightIdx + leftIdx)/2   
+            diffCenter = center - lastCenter
+            currentThickness = rightIdx - leftIdx
+            
+            if np.sqrt(diffCenter*diffCenter) > 5 or currentThickness < minThickness or currentThickness > maxThickness: # stop the process when thickness difference becomes to big
+                break
+            
+            lastCenter = center
+            currentCenters.insert(0, [i,center])
+             
+        return currentCenters
+    
+                    
+    def get_left_and_right_border( self, array1D, targetIdx, background ):
+        arrSh = array1D.shape
+        rightIdx = 0
+        leftIdx = 0
+        
+        # look right
+        for i in range( targetIdx, arrSh[0] ) :
+            if array1D[i] < background :
+                rightIdx = i
+                break
+                
+        # look left
+        for i in range( targetIdx, 0, -1 ) : 
+            if array1D[i] < background :
+                leftIdx = i
+                break
+                
+        return leftIdx, rightIdx
+    
     
     def read_intensities_of_point_set(self, pointset, img):
         h,w = img.shape
@@ -805,10 +920,10 @@ class AgeDetermination:
                                              
         plt.show() 
 
-    def crop_joint(self, img, finger, joints, rectSideLength):
+    def crop_joint(self, img, finger, fingers, rectSideLength):
            
         cropedJoints = [] 
-        for joint in joints:
+        for joint in fingers:
             arrIdx = int(joint[0])
             coord = finger[ arrIdx ]
             xc = coord[1]
