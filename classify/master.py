@@ -58,8 +58,8 @@ class masterClassifier:
             scores['littleFinger'] = self.classifyFinger(jointImages['littleFinger'],'littleFinger')
         if len(jointImages['middleFinger'])==self.nJointsForFingers['middleFinger']:
             scores['middleFinger'] = self.classifyFinger(jointImages['middleFinger'],'middleFinger')
-        if len(jointImages['thumb'])==self.nJointsForFingers['thumb']:
-            scores['thumb'] = self.classifyFinger(jointImages['thumb'],'thumb')
+ #       if len(jointImages['thumb'])==self.nJointsForFingers['thumb']:
+ #           scores['thumb'] = self.classifyFinger(jointImages['thumb'],'thumb')
         
         return scores
         
