@@ -53,7 +53,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.display_image( self.mOrignialXRayImage )
         self.dectectJointsButton.enabledChange(True)
-        
+        print str(fileName)
     
     @pyqtSignature("")
     def on_dectectJointsButton_released(self):

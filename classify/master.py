@@ -64,6 +64,18 @@ class masterClassifier:
         #if len(jointImages['thumb'])==self.nJointsForFingers['thumb']:
         #scores['thumb'] = self.classifyFinger(jointImages['thumb'],'thumb')
         
+        #Append easy to compare string...
+        lf1=scores['littleFinger'][0]
+        lf2=scores['littleFinger'][1]
+        lf3=scores['littleFinger'][2]
+        
+        mf1=scores['middleFinger'][0]
+        mf2=scores['middleFinger'][1]
+        mf3=scores['middleFinger'][2]
+        
+        scores['resultLine']=  "t3" + "-" + str(mf3) + "-" + str(lf3) + "-" + str(mf2) + "-" + str(lf2) + "-" + "t1" + "-" + str(mf1) + "-" + str(lf1)
+        
+        
         return scores
         
     def classifyFinger(self,jointImages,fingerName): # classifies each image in joints
