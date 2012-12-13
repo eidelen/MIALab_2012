@@ -15,14 +15,17 @@ class masterClassifier:
         self.allScores = {} # stores the computed scores for each joint
         
         # set the indices of each finger for the score table. Our numbering starts at the distal end.
-        self.scoreTableInds = {'littleFinger':[15, 12, 10], 'middleFinger': [14, 11, 9], 'thumb':[13, 8]}
-        self.nJointsForFingers = {'littleFinger': 3, 'middleFinger': 3, 'thumb': 2}
+        #self.scoreTableInds = {'littleFinger':[15, 12, 10], 'middleFinger': [14, 11, 9], 'thumb':[13, 8]}
+        self.scoreTableInds = {'littleFinger':[15, 12, 10], 'middleFinger': [14, 11, 9]}
+        #self.nJointsForFingers = {'littleFinger': 3, 'middleFinger': 3, 'thumb': 2}
+        self.nJointsForFingers = {'littleFinger': 3, 'middleFinger': 3}
         self.jointNames = ['distal', 'middle', 'proximal']
     
-        for finger in ['littleFinger', 'middleFinger', 'thumb']:
+        #for finger in ['littleFinger', 'middleFinger', 'thumb']:
+        for finger in ['littleFinger', 'middleFinger']:
             
             # load all template images and remember subect ids
-            fnames = glob.glob('extractedJoints/*_' + finger + '_*.png')
+            fnames = glob.glob('../extractedJoints/*_' + finger + '_*.png')
             
             self.classImages[finger] = {}
             self.classLabels[finger] = {}
@@ -58,8 +61,8 @@ class masterClassifier:
             scores['littleFinger'] = self.classifyFinger(jointImages['littleFinger'],'littleFinger')
         if len(jointImages['middleFinger'])==self.nJointsForFingers['middleFinger']:
             scores['middleFinger'] = self.classifyFinger(jointImages['middleFinger'],'middleFinger')
- #       if len(jointImages['thumb'])==self.nJointsForFingers['thumb']:
- #           scores['thumb'] = self.classifyFinger(jointImages['thumb'],'thumb')
+        #if len(jointImages['thumb'])==self.nJointsForFingers['thumb']:
+        #scores['thumb'] = self.classifyFinger(jointImages['thumb'],'thumb')
         
         return scores
         
@@ -93,4 +96,12 @@ class masterClassifier:
         #predictedClass = self.classLabels[fingerName][jointName][score-1]
         
         return classification
+    
+    def getClassImages(self):
         
+        return self.classImages
+    
+    def getClassLabels(self):
+        
+        return self.classLabels
+    
