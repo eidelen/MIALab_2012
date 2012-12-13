@@ -46,11 +46,11 @@ class masterClassifier:
                     self.subjects[finger][self.jointNames[jointId-1]].append(subjectId)
                     self.classImages[finger][self.jointNames[jointId-1]].append(scipy.misc.imread(fn))
                     self.classLabels[finger][self.jointNames[jointId-1]].append(int(scoreTable[subjectId-1][self.scoreTableInds[finger][jointId-1]]))
-        
-        x=1
-        
+   
     def registerClassifier(self,classifier):
         
+        classifier.setClassImages(self.classImages)
+        classifier.setClassLabels(self.classLabels)
         self.classifiers.append(classifier)
     
     def classifyHand(self,jointImages):
@@ -94,9 +94,9 @@ class masterClassifier:
         scores = []
         
         for classifier in self.classifiers:
-            classifier.setClassImages(self.classImages[fingerName][jointName])
-            classifier.setClassLabels(self.classLabels[fingerName][jointName])
-            scores.append(classifier.classify(jointImage))
+            #classifier.setClassImages(self.classImages[fingerName][jointName])
+            #classifier.setClassLabels(self.classLabels[fingerName][jointName])
+            scores.append(classifier.classify(jointImage,fingerName,jointName))
         
         # majority win for the class
         d = [0]*max(scores)

@@ -43,6 +43,7 @@ import cv2
 
 from classify import masterClassifier
 from classify.templateMatchingClassifier import *
+from classify.PCAClassifier import *
 
 # Todo: check img 14, 4
 
@@ -124,8 +125,10 @@ class AgeDetermination:
         
         # add a template matching classifier
         tmClassifier = templateMatchingClassifier()
+        pcaClassifier = PCAClassifier()
         
         classifier.registerClassifier(tmClassifier)
+        classifier.registerClassifier(pcaClassifier)
         
         return classifier.classifyHand(fingers)
         
