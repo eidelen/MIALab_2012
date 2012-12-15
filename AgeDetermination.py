@@ -128,7 +128,7 @@ class AgeDetermination:
         pcaClassifier = PCAClassifier()
         
         classifier.registerClassifier(tmClassifier)
-        classifier.registerClassifier(pcaClassifier)
+        #classifier.registerClassifier(pcaClassifier)
         
         return classifier.classifyHand(fingers)
         

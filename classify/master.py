@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import glob
 import re
 import scipy
@@ -94,12 +96,14 @@ class masterClassifier:
         scores = []
         
         for classifier in self.classifiers:
-            #classifier.setClassImages(self.classImages[fingerName][jointName])
-            #classifier.setClassLabels(self.classLabels[fingerName][jointName])
-            scores.append(classifier.classify(jointImage,fingerName,jointName))
+            if not type(classifier).__name__ == "PCAClassifier":
+                classifier.setClassImages(self.classImages[fingerName][jointName])
+                classifier.setClassLabels(self.classLabels[fingerName][jointName])
+            
+            scores.append(classifier.classify(jointImage, fingerName, jointName))
         
         # majority win for the class
-        d = [0]*max(scores)
+        d = [0] * max(scores)
         for s in scores:
             d[s-1] += 1
         classification = np.argmax(d)+1

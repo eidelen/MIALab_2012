@@ -11,12 +11,15 @@ class templateMatchingClassifier(jointClassifier):
         super(templateMatchingClassifier, self).__init__()
         return
     
-    def classify(self,sample):
+    def classify(self,sample,fingerName,jointName):
         
         scores = []
         for classImage in self.classImages:      
             
             #plt.imshow(sample[10:70,20:60],cmap=plt.cm.gray)
+            #plt.show()
+            
+            #plt.imshow(classImage,cmap=plt.cm.gray)
             #plt.show()
             
             #do template matching
