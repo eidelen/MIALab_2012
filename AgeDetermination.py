@@ -43,6 +43,7 @@ import cv2
 
 from classify import masterClassifier
 from classify.templateMatchingClassifier import *
+from classify.templateMatchingEdgeClassifier import *
 from classify.PCAClassifier import *
 
 # Todo: check img 14, 4
@@ -124,10 +125,29 @@ class AgeDetermination:
         classifier = masterClassifier(scoreTable)
         
         # add a template matching classifier
-        tmClassifier = templateMatchingClassifier()
+        tmClassifier1 = templateMatchingClassifier([0,100,0,100],False)
+        tmClassifier2 = templateMatchingClassifier([20,80,40,60],False)
+        tmClassifier3 = templateMatchingClassifier([20,80,20,80],False)
+        tmClassifier4 = templateMatchingClassifier([0,100,45,55],False)
+        tmClassifier5 = templateMatchingClassifier([10,90,10,90],False)
+        tmClassifier6 = templateMatchingEdgeClassifier([0,100,0,100],False)
+        tmClassifier7 = templateMatchingEdgeClassifier([20,80,40,60],False)
+        tmClassifier8 = templateMatchingEdgeClassifier([20,80,20,80],False)
+        tmClassifier9 = templateMatchingEdgeClassifier([30,70,40,60],False)
+        tmClassifier10 = templateMatchingEdgeClassifier([0,100,0,100],False)
+        
         pcaClassifier = PCAClassifier()
         
-        classifier.registerClassifier(tmClassifier)
+        classifier.registerClassifier(tmClassifier1)
+        classifier.registerClassifier(tmClassifier2)
+        classifier.registerClassifier(tmClassifier3)
+        classifier.registerClassifier(tmClassifier4)
+        classifier.registerClassifier(tmClassifier5)
+        classifier.registerClassifier(tmClassifier6)
+        classifier.registerClassifier(tmClassifier7)
+        classifier.registerClassifier(tmClassifier8)
+        classifier.registerClassifier(tmClassifier9)
+        classifier.registerClassifier(tmClassifier10)
         #classifier.registerClassifier(pcaClassifier)
         
         return classifier.classifyHand(fingers)
