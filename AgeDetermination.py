@@ -299,6 +299,9 @@ class AgeDetermination:
         a = (p1y-p0y)/deltaX
         b = p0y-(a*p0x)
         
+        if abs(a) < 0.0001: # in case deltaX is 0
+            a = 0.0001
+        
         for y in range(p1[0], p1[0] + centerCount): #continue line by original length
             x = (y-b)/a
             currentCenters.append([y,x])
@@ -321,7 +324,9 @@ class AgeDetermination:
         backgroundLine = smoothed[ initialCenter[0] , range( initialCenter[1], initialCenter[1]+100 ) ]
         minValueOnLine = min( backgroundLine )
         avgValueOnLine = mean(backgroundLine )
-        backgroundBorderVal = (minValueOnLine + avgValueOnLine)/2       
+        
+        bgFactor=2.0
+        backgroundBorderVal = (minValueOnLine + avgValueOnLine)/bgFactor     
         
         # growing downwards
         leftIdx, rightIdx = self.get_left_and_right_border( image[ initialCenter[0] , :], initialCenter[1] , backgroundBorderVal )  
