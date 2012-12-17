@@ -45,6 +45,7 @@ from classify import masterClassifier
 from classify.templateMatchingClassifier import *
 from classify.templateMatchingEdgeClassifier import *
 from classify.PCAClassifier import *
+from xml.etree.ElementTree import tostring
 
 # Todo: check img 14, 4
 
@@ -62,9 +63,15 @@ class AgeDetermination:
         imgH, imgW = numpyImage.shape
         numpyImage = numpyImage[0:(imgH-100),:]
         imgH, imgW = numpyImage.shape
+        
+        
 
         # first resize the image to the same size
-        numpyImage = self.resize_image(numpyImage)
+        imgHOld, imgWOld = numpyImage.shape
+        numpyImage = self.resize_image(numpyImage) 
+        imgHNew, imgWNew = numpyImage.shape
+        scaleFactor = float(imgWOld)/float(imgWNew)
+        
                 
         success, littleFingerLine, ringFingerLine, middleFingerLine, pointingFingerLine = self.get_fingers_of_interest_franky_approach( numpyImage )
         
@@ -84,8 +91,8 @@ class AgeDetermination:
         jointsArrays.append(ltFingerJointsIdx)
         jointsArrays.append(middleFingerJointsIdx)
         
-        croppedJointsLittleFinger = self.crop_joint( numpyImage, littleFingerLine, ltFingerJointsIdx, joint_rect_size)
-        croppedJointsMiddleFinger = self.crop_joint( numpyImage, middleFingerLine, middleFingerJointsIdx, joint_rect_size)
+        croppedJointsLittleFinger = self.crop_joint( numpyImage, littleFingerLine, ltFingerJointsIdx, joint_rect_size, 'little', scaleFactor )
+        croppedJointsMiddleFinger = self.crop_joint( numpyImage, middleFingerLine, middleFingerJointsIdx, joint_rect_size, 'middle', scaleFactor)
 
         if(self.verbosity > 0):
             self.draw_joints_to_img(numpyImage, fingerLineArrays, jointsArrays, joint_rect_size)
@@ -94,6 +101,7 @@ class AgeDetermination:
                 plt.subplot(2,3,plotCnt)
                 plt.imshow(croppedJointsLittleFinger[i], cmap=cm.Greys_r)
                 plotCnt = plotCnt + 1
+                
             for i in range(0,len(croppedJointsMiddleFinger)):
                 plt.subplot(2,3,plotCnt)
                 plt.imshow(croppedJointsMiddleFinger[i], cmap=cm.Greys_r)
@@ -532,14 +540,19 @@ class AgeDetermination:
                                              
         plt.show() 
 
-    def crop_joint(self, img, finger, fingers, rectSideLength):
+    def crop_joint(self, img, finger, fingers, rectSideLength, name, scaleFactor ):
            
         cropedJoints = [] 
+        cnt = 0
         for joint in fingers:
             arrIdx = int(joint[0])
             coord = finger[ arrIdx ]
             xc = coord[1]
             yc = coord[0]
+            
+            imgXC = xc * scaleFactor
+            imgYC = yc * scaleFactor
+            print str(name) + ' joint ' + str(cnt) + ' x,y = ' + str(imgXC) + ', ' + str(imgYC)
                                    
             # compute angle
             p0V = np.array( [[ finger[ arrIdx-10 ][1] ],[ finger[ arrIdx-10 ][0] ]] )
@@ -563,6 +576,8 @@ class AgeDetermination:
             cropRot = cropRot[ cropWidhtH-(rectSideLength/2):cropWidhtH+(rectSideLength/2),cropWidhtH-(rectSideLength/2):cropWidhtH+(rectSideLength/2)]
             
             cropedJoints.append(cropRot)
+            
+            cnt = cnt + 1
         
         return cropedJoints
 
